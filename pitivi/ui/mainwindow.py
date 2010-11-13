@@ -238,6 +238,25 @@ class PitiviMainWindow(gtk.Window, Loggable):
     def _recordCb(self, unused_button):
         self.showEncodingDialog(self.project)
 
+    def showPublishToYouTubeDialog(self, project, pause=True):
+        """
+        TODO: Document
+        """
+        from publishtoyoutubedialog import PublishToYouTubeDialog
+
+        if pause:
+            project.pipeline.pause()
+        win = PublishToYouTubeDialog(self, project)
+        win.window.connect("destroy", self._encodingDialogDestroyCb)
+        self.set_sensitive(False)
+        win.show()
+
+    def _publishToYouTubeDialogDestroyCb(self, unused_dialog):
+        self.set_sensitive(True)
+
+    def _publishCb(self, unused_button):
+        self.showPublishToYouTubeDialog(self.project)
+
     def _setActions(self, instance):
         PLAY = _("Start Playback")
         PAUSE = _("Stop Playback")
@@ -259,6 +278,8 @@ class PitiviMainWindow(gtk.Window, Loggable):
              None, _("Edit the project settings"), self._projectSettingsCb),
             ("RenderProject", 'pitivi-render', _("_Render..."),
              None, _("Export your project as a finished movie"), self._recordCb),
+            ("PublishToYouTube", 'pitivi-publish' , _("_Publish to YouTube"),
+             None, _("Publish to YouTube"), self._publishCb),
             ("Undo", gtk.STOCK_UNDO,
              _("_Undo"),
              "<Ctrl>Z", _("Undo the last operation"), self._undoCb),
@@ -318,6 +339,12 @@ class PitiviMainWindow(gtk.Window, Loggable):
                 # this will be set sensitive when the timeline duration changes
                 action.set_sensitive(False)
                 action.props.is_important = True
+            elif action_name == "PublishToYouTube":
+                # TODO: this sensitivity should probably be the same as "RenderProject"'s sensitivity
+                action.set_sensitive(True)
+            elif action_name == "ImportfromCam":
+                self.webcam_button = action
+                action.set_sensitive(False)
             elif action_name == "Screencast":
                 # FIXME : re-enable this action once istanbul integration is complete
                 # and upstream istanbul has applied packages for proper interaction.

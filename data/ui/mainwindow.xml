@@ -29,6 +29,8 @@
       <menuitem action="WindowizeViewer" />
     </menu>
     <menu action="Library">
+      <menuitem action="RenderProject" />
+      <menuitem action="PublishToYouTube" />
       <separator />
       <placeholder name="SourceList" />
       <separator />
