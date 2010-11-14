@@ -221,10 +221,11 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="entry1">
+              <widget class="GtkEntry" id="title">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">•</property>
+                <signal name="changed" handler="_titleChangedCb"/>
               </widget>
               <packing>
                 <property name="left_attach">1</property>
@@ -232,7 +233,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkTextView" id="textview1">
+              <widget class="GtkTextView" id="description">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
               </widget>

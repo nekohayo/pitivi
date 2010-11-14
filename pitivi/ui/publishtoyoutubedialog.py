@@ -37,24 +37,33 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
 
         self.app = app
 
-        # YouTube integration
-        self.yt = AsyncYT()
-
         # UI widgets
         self.login = self.widgets["login"]
         self.login_status = self.widgets["login_status"]
         self.username = self.widgets["username"]
         self.password = self.widgets["password"]
-
+        
+        self.description = self.widgets["description"]
+        
         # Assistant pages
         self.login_page = self.window.get_nth_page(0)
         self.metadata_page = self.window.get_nth_page(1)
         self.render_page = self.window.get_nth_page(2)
         self.announce_page = self.window.get_nth_page(3)
 
+        self.description.get_buffer().connect("changed", self._descriptionChangedCb)
+
         Renderer.__init__(self, project, pipeline)
 
         self.window.connect("delete-event", self._deleteEventCb)
+
+        # YouTube integration
+        self.yt = AsyncYT()
+        self.metadata = {
+            "title": "",
+            "description": "",
+            "private": True,
+        }
 
     def destroy(self):
         self.yt.stop()
@@ -84,3 +93,18 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.login_status.set_text("Logged in")
         # TODO: The throbber should now be deactivated
         self.window.set_page_complete(self.login_page, True)
+
+    def _update_metadata_page_complete(self):
+        is_complete = all([
+            len(self.metadata["title"]) != 0,
+            len(self.metadata["description"]) != 0,
+        ])
+        self.window.set_page_complete(self.metadata_page, is_complete)
+
+    def _titleChangedCb(self, widget):
+        self.metadata["title"] = widget.get_text()
+        self._update_metadata_page_complete()
+
+    def _descriptionChangedCb(self, buffer):
+        self.metadata["description"] = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+        self._update_metadata_page_complete()
