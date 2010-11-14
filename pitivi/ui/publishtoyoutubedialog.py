@@ -23,9 +23,11 @@
 Dialog for publishing to YouTube
 """
 
+import tempfile, os, gtk
 from pitivi.log.loggable import Loggable
 from pitivi.ui.glade import GladeWindow
 from pitivi.actioner import Renderer
+from pitivi.ui.exportsettingswidget import ExportSettingsDialog
 from pitivi.youtube_glib import AsyncYT, PipeWrapper
 
 class PublishToYouTubeDialog(GladeWindow, Renderer):
@@ -44,7 +46,9 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.password = self.widgets["password"]
         
         self.description = self.widgets["description"]
-        
+
+        self.progressbar = self.widgets["progressbar"]
+
         # Assistant pages
         self.login_page = self.window.get_nth_page(0)
         self.metadata_page = self.window.get_nth_page(1)
@@ -53,9 +57,17 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
 
         self.description.get_buffer().connect("changed", self._descriptionChangedCb)
 
-        Renderer.__init__(self, project, pipeline)
-
         self.window.connect("delete-event", self._deleteEventCb)
+
+        self.tmpdir = tempfile.mkdtemp()
+        self.fifoname = os.path.join(self.tmpdir, 'pitivi_rendering_fifo')
+        os.mkfifo(self.fifoname)
+
+        # TODO: This is probably not the best way to build an URL
+        #self.outfile = 'file:/home/mag/test.webm' #'file:' + self.fifoname
+        outfile = 'file://' + self.fifoname
+
+        Renderer.__init__(self, project, pipeline, outfile = outfile)
 
         # YouTube integration
         self.yt = AsyncYT()
@@ -64,15 +76,24 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
             "description": "",
             "private": True,
         }
-
-    def destroy(self):
-        self.yt.stop()
-        GladeWindow.destroy(self)
+        self.has_started_rendering = False
 
     def _shutDown(self):
         self.debug("shutting down")
+        self.yt.stop()
+
+        try:
+            os.remove(self.fifoname)
+        except OSError:
+            pass
+
+        try:
+            os.rmdir(self.tmpdir)
+        except OSError:
+            pass
+
         # Abort recording
-        #self.removeAction()
+        self.removeAction()
         self.destroy()
 
     def _deleteEventCb(self, window, event):
@@ -108,3 +129,41 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
     def _descriptionChangedCb(self, buffer):
         self.metadata["description"] = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
         self._update_metadata_page_complete()
+
+    def _prepareCb(self, assistant, page):
+        if page == self.render_page and not self.has_started_rendering:
+            self._startRenderAndUpload()
+
+    def _stupidlyGetSettingsFromUser(self):
+        dialog = ExportSettingsDialog(self.app, self.settings)
+        res = dialog.run()
+        dialog.hide()
+        if res == gtk.RESPONSE_ACCEPT:
+            self.settings = dialog.getSettings()
+        dialog.destroy()
+
+    def _startRenderAndUpload(self):
+        # TODO: These settings should:
+        #  * Have a page in the assistant
+        #  * Be incredibly narrowed down for the YouTube use case:
+        #     * WebM (vp8/vorbis) is always appropriate
+        #     * We could offer for example three quality categories
+        #
+        # In the mean time, pop up the entire settings-dialog:
+        self._stupidlyGetSettingsFromUser()
+
+        self.has_started_rendering = True
+        
+        # Start uploading:
+        self.yt.upload(lambda: PipeWrapper(open(self.fifoname, 'rb')), self.metadata, self._uploadDoneCb)
+
+        # Start rendering:
+        self.startAction()
+
+    def updatePosition(self, fraction, text):
+        self.progressbar.set_fraction(fraction)
+        if text is not None:
+            self.progressbar.set_text(_("About %s left") % text)
+
+    def _uploadDoneCb(self, new_entry):
+        self.window.set_page_complete(self.render_page, True)

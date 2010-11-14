@@ -92,7 +92,7 @@ class YTThread(threading.Thread):
         gobject.idle_add(callback, token)
 
     def upload(self, filename, metadata, callback):
-        new_entry = upload(self._yt_service, metadata, filename)
+        new_entry = upload(self._yt_service, metadata, filename())
         gobject.idle_add(callback, new_entry)
 
 

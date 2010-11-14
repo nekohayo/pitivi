@@ -8,6 +8,7 @@
     <property name="window_position">center</property>
     <property name="default_width">600</property>
     <property name="default_height">500</property>
+    <signal name="prepare" handler="_prepareCb"/>
     <signal name="cancel" handler="_cancelCb"/>
     <child>
       <placeholder/>
@@ -327,7 +328,27 @@
       </widget>
     </child>
     <child>
-      <placeholder/>
+      <widget class="GtkVBox" id="vbox4">
+        <property name="visible">True</property>
+        <child>
+          <widget class="GtkLabel" id="label11">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Rendering and uploading...</property>
+          </widget>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <widget class="GtkProgressBar" id="progressbar">
+            <property name="visible">True</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </widget>
     </child>
     <child>
       <placeholder/>
