@@ -10,6 +10,9 @@
     <property name="default_height">500</property>
     <signal name="cancel" handler="_cancelCb"/>
     <child>
+      <placeholder/>
+    </child>
+    <child>
       <widget class="GtkVBox" id="vbox2">
         <property name="visible">True</property>
         <property name="border_width">12</property>
@@ -66,6 +69,7 @@
               <widget class="GtkEntry" id="password">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="visibility">False</property>
                 <property name="invisible_char">•</property>
               </widget>
               <packing>
@@ -93,6 +97,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
+                <signal name="clicked" handler="_loginClickedCb"/>
               </widget>
             </child>
           </widget>
@@ -117,7 +122,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label11">
+              <widget class="GtkLabel" id="login_status">
                 <property name="visible">True</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Not logged in</property>
