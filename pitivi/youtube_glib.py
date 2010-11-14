@@ -82,18 +82,24 @@ class YTThread(threading.Thread):
         self._running = False
 
     def authenticate_with_password(self, username, password, callback):
-        self._yt_service.email = username
-        self._yt_service.password = password
-        self._yt_service.ProgrammaticLogin()
-        gobject.idle_add(callback, self._yt_service.GetClientLoginToken())
+        try:
+            self._yt_service.email = username
+            self._yt_service.password = password
+            self._yt_service.ProgrammaticLogin()
+            gobject.idle_add(callback, ("good", self._yt_service.GetClientLoginToken()))
+        except Exception, e:
+            gobject.idle_add(callback, ("bad", e))
 
     def authenticate_with_token(self, token, callback):
         self._yt_service.SetClientLoginToken(token)
         gobject.idle_add(callback, token)
 
     def upload(self, filename, metadata, callback):
-        new_entry = upload(self._yt_service, metadata, filename())
-        gobject.idle_add(callback, new_entry)
+        try:
+            new_entry = upload(self._yt_service, metadata, filename())
+            gobject.idle_add(callback, ("good", new_entry))
+        except Exception, e:
+            gobject.idle_add(callback, ("bad", e))
 
 
 class AsyncYT:

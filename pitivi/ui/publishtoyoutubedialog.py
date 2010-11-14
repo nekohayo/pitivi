@@ -109,11 +109,21 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.login_status.set_text("Logging in...")
         # TODO: This should activate a throbber
         self.yt.authenticate_with_password(self.username.get_text(), self.password.get_text(), self._loginResultCb)
+        # TODO: Use self.yt.authenticate_with_token if we have a login token
 
-    def _loginResultCb(self, token):
-        self.login_status.set_text("Logged in")
+    def _loginResultCb(self, result):
         # TODO: The throbber should now be deactivated
-        self.window.set_page_complete(self.login_page, True)
+        status = result[0]
+        if status == 'good':
+            status, login_token = result
+            # TODO: The login token should be stored and reused
+            # rather than forcing login with password every time
+            self.login_status.set_text("Logged in")
+            self.window.set_page_complete(self.login_page, True)
+        else:
+            status, exception = result
+            self.login_status.set_text(str(exception))
+            self.window.set_page_complete(self.login_page, False)
 
     def _update_metadata_page_complete(self):
         is_complete = all([
@@ -165,5 +175,10 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         if text is not None:
             self.progressbar.set_text(_("About %s left") % text)
 
-    def _uploadDoneCb(self, new_entry):
-        self.window.set_page_complete(self.render_page, True)
+    def _uploadDoneCb(self, result):
+        if result[0] == "good":
+            status, new_entry = result
+            self.window.set_page_complete(self.render_page, True)
+        else:
+            status, exception = result
+            # TODO: Something about the error status
