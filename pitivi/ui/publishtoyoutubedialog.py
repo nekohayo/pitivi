@@ -30,6 +30,11 @@ from pitivi.actioner import Renderer
 from pitivi.ui.exportsettingswidget import ExportSettingsDialog
 from pitivi.youtube_glib import AsyncYT, PipeWrapper
 from gettext import gettext as _
+try :
+    import gnomekeyring as gk
+    unsecure_storing = False
+except :
+    unsecure_storing = True
 
 class PublishToYouTubeDialog(GladeWindow, Renderer):
     glade_file = 'publishtoyoutubedialog.glade'
@@ -37,6 +42,7 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
     def __init__(self, app, project, pipeline=None):
         Loggable.__init__(self)
         GladeWindow.__init__(self)
+        self.app_settings = app.settings
 
         self.app = app
 
@@ -45,6 +51,21 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.login_status = self.widgets["login_status"]
         self.username = self.widgets["username"]
         self.password = self.widgets["password"]
+
+        #Auto-completion
+        unsecure_storing = True
+        if unsecure_storing :
+            self.widgets["checkbutton1"].set_label("Remember me ! Warning : \
+storage will not be secure. Install python-gnomekeyring.")
+        self.remember_me = False
+        item_keys = gk.list_item_ids_sync('pitivi')
+        item_info = gk.item_get_info_sync('pitivi', item_keys[0])
+        if item_info :
+            self.username.set_text(item_info.get_display_name())
+            self.password.set_text(item_info.get_secret())
+        elif self.app_settings.login:
+            self.username.set_text(self.app_settings.login)
+            self.password.set_text(self.app_settings.password)
         
         self.description = self.widgets["description"]
 
@@ -97,6 +118,23 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.removeAction()
         self.destroy()
 
+    def _storePassword(self):
+        if unsecure_storing:
+            self.app_settings.login = self.username.get_text()
+            self.app_settings.password = self.password.get_text()
+            self.app_settings.storeSettings()
+        else :
+            if "pitivi" not in gk.list_keyring_names_sync():
+                print "hein ?"
+                gk.create_sync('pitivi', 'gkpass')
+            atts = {'username':'pitivi',
+                    'server':'Youtube',
+                    'service':'HTTP',
+                    'port':'80',
+                   }
+            a = gk.item_create_sync('pitivi', gk.ITEM_GENERIC_SECRET,
+                self.username.get_text(), atts, self.password.get_text(), True)
+
     def _deleteEventCb(self, window, event):
         self.debug("delete event")
         self._shutDown()
@@ -105,20 +143,24 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.debug("cancel event")
         self._shutDown()
 
+    def _rememberMeCb(self, button):
+        self.remember_me = False
+        if button.get_active():
+            self.remember_me = True
+
     def _loginClickedCb(self, *args):
         self.debug("login clicked")
         self.login_status.set_text("Logging in...")
         # TODO: This should activate a throbber
         self.yt.authenticate_with_password(self.username.get_text(), self.password.get_text(), self._loginResultCb)
-        # TODO: Use self.yt.authenticate_with_token if we have a login token
 
     def _loginResultCb(self, result):
         # TODO: The throbber should now be deactivated
         status = result[0]
         if status == 'good':
             status, login_token = result
-            # TODO: The login token should be stored and reused
-            # rather than forcing login with password every time
+            if self.remember_me:
+                self._storePassword()
             self.login_status.set_text("Logged in")
             self.window.set_page_complete(self.login_page, True)
             self.window.set_current_page(self.window.get_current_page() + 1)
