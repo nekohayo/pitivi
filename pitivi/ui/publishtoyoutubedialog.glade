@@ -1,15 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0"?>
 <glade-interface>
   <!-- interface-requires gtk+ 2.16 -->
   <!-- interface-naming-policy toplevel-contextual -->
   <widget class="GtkAssistant" id="assistant1">
     <property name="border_width">12</property>
     <property name="title" translatable="yes">Publish to YouTube</property>
+    <property name="modal">True</property>
     <property name="window_position">center</property>
     <property name="default_width">600</property>
     <property name="default_height">500</property>
+    <property name="destroy_with_parent">True</property>
     <signal name="prepare" handler="_prepareCb"/>
     <signal name="cancel" handler="_cancelCb"/>
+    <signal name="close" handler="_destroyCb"/>
     <child>
       <placeholder/>
     </child>
@@ -59,7 +62,7 @@
               <widget class="GtkEntry" id="username">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">•</property>
+                <property name="invisible_char">&#x2022;</property>
               </widget>
               <packing>
                 <property name="left_attach">1</property>
@@ -71,7 +74,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="visibility">False</property>
-                <property name="invisible_char">•</property>
+                <property name="invisible_char">&#x2022;</property>
               </widget>
               <packing>
                 <property name="left_attach">1</property>
@@ -225,7 +228,7 @@
               <widget class="GtkEntry" id="title">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">•</property>
+                <property name="invisible_char">&#x2022;</property>
                 <signal name="changed" handler="_titleChangedCb"/>
               </widget>
               <packing>
@@ -249,7 +252,7 @@
               <widget class="GtkEntry" id="entry2">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="invisible_char">•</property>
+                <property name="invisible_char">&#x2022;</property>
               </widget>
               <packing>
                 <property name="left_attach">1</property>
@@ -287,17 +290,7 @@
                   </packing>
                 </child>
                 <child>
-                  <widget class="GtkRadioButton" id="radiobutton2">
-                    <property name="label" translatable="yes">Unlisted</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">radiobutton1</property>
-                  </widget>
-                  <packing>
-                    <property name="position">1</property>
-                  </packing>
+                  <placeholder/>
                 </child>
                 <child>
                   <widget class="GtkRadioButton" id="radiobutton3">
@@ -307,6 +300,7 @@
                     <property name="receives_default">False</property>
                     <property name="draw_indicator">True</property>
                     <property name="group">radiobutton1</property>
+                    <signal name="toggled" handler="_changeStatusCb"/>
                   </widget>
                   <packing>
                     <property name="position">2</property>
@@ -349,6 +343,26 @@
           </packing>
         </child>
       </widget>
+    </child>
+    <child>
+      <widget class="GtkVBox" id="vbox5">
+        <property name="visible">True</property>
+        <child>
+          <widget class="GtkLabel" id="label12">
+            <property name="visible">True</property>
+            <property name="label" translatable="yes">Termin&#xE9; !</property>
+          </widget>
+          <packing>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+      </widget>
+      <packing>
+        <property name="page_type">summary</property>
+      </packing>
     </child>
     <child>
       <placeholder/>

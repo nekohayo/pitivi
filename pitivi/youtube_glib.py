@@ -59,6 +59,7 @@ def upload(yt_service, metadata, filename):
         media = my_media_group,
     )
     new_entry = yt_service.InsertVideoEntry(video_entry, filename)
+    print "c'est fait petit"
     return new_entry
 
 

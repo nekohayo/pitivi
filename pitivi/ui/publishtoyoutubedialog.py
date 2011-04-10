@@ -29,6 +29,7 @@ from pitivi.ui.glade import GladeWindow
 from pitivi.actioner import Renderer
 from pitivi.ui.exportsettingswidget import ExportSettingsDialog
 from pitivi.youtube_glib import AsyncYT, PipeWrapper
+from gettext import gettext as _
 
 class PublishToYouTubeDialog(GladeWindow, Renderer):
     glade_file = 'publishtoyoutubedialog.glade'
@@ -74,7 +75,7 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.metadata = {
             "title": "",
             "description": "",
-            "private": True,
+            "private": False,
         }
         self.has_started_rendering = False
 
@@ -120,6 +121,7 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
             # rather than forcing login with password every time
             self.login_status.set_text("Logged in")
             self.window.set_page_complete(self.login_page, True)
+            self.window.set_current_page(self.window.get_current_page() + 1)
         else:
             status, exception = result
             self.login_status.set_text(str(exception))
@@ -143,6 +145,15 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
     def _prepareCb(self, assistant, page):
         if page == self.render_page and not self.has_started_rendering:
             self._startRenderAndUpload()
+
+    def _destroyCb (self, ignored):
+        self.window.destroy()
+
+    def _changeStatusCb (self, button):
+        if button.get_active():
+            self.metadata["private"] = True
+        else:
+            self.metadata["private"] = False
 
     def _stupidlyGetSettingsFromUser(self):
         dialog = ExportSettingsDialog(self.app, self.settings)
@@ -176,9 +187,12 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
             self.progressbar.set_text(_("About %s left") % text)
 
     def _uploadDoneCb(self, result):
+        print "ok"
         if result[0] == "good":
+            print "good !"
             status, new_entry = result
             self.window.set_page_complete(self.render_page, True)
+            self.window.set_current_page(self.window.get_current_page() + 1)
         else:
             status, exception = result
             # TODO: Something about the error status
