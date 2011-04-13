@@ -27,7 +27,7 @@ import tempfile, os, gtk
 from pitivi.log.loggable import Loggable
 from pitivi.ui.glade import GladeWindow
 from pitivi.actioner import Renderer
-from pitivi.ui.exportsettingswidget import ExportSettingsDialog
+from projectsettings import ProjectSettingsDialog
 from pitivi.youtube_glib import AsyncYT, PipeWrapper
 from gettext import gettext as _
 try :
@@ -45,20 +45,26 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.app_settings = app.settings
 
         self.app = app
+        self.pipeline = pipeline
 
         # UI widgets
         self.login = self.widgets["login"]
         self.login_status = self.widgets["login_status"]
         self.username = self.widgets["username"]
         self.password = self.widgets["password"]
+        self.oldsettings = self.app.project.getSettings()
+        self.settings = self.oldsettings.copy()
+        self.settings.setEncoders(muxer='avimux', vencoder='xvidenc', aencoder="lamemp3enc")
+        self.app.project.setSettings(self.settings)
+        print getattr(self.settings, "vcodecsettings"), "cool ! "
 
         #Auto-completion
-        unsecure_storing = True
         if unsecure_storing :
             self.widgets["checkbutton1"].set_label("Remember me ! Warning : \
 storage will not be secure. Install python-gnomekeyring.")
         self.remember_me = False
         item_keys = gk.list_item_ids_sync('pitivi')
+        gk.unlock_sync('pitivi', 'gkpass')
         item_info = gk.item_get_info_sync('pitivi', item_keys[0])
         if item_info :
             self.username.set_text(item_info.get_display_name())
@@ -103,6 +109,8 @@ storage will not be secure. Install python-gnomekeyring.")
     def _shutDown(self):
         self.debug("shutting down")
         self.yt.stop()
+        self.window.destroy()
+        self.app.project.setSettings(self.oldsettings)
 
         try:
             os.remove(self.fifoname)
@@ -189,7 +197,7 @@ storage will not be secure. Install python-gnomekeyring.")
             self._startRenderAndUpload()
 
     def _destroyCb (self, ignored):
-        self.window.destroy()
+        self._shutDown()
 
     def _changeStatusCb (self, button):
         if button.get_active():
@@ -198,24 +206,14 @@ storage will not be secure. Install python-gnomekeyring.")
             self.metadata["private"] = False
 
     def _stupidlyGetSettingsFromUser(self):
-        dialog = ExportSettingsDialog(self.app, self.settings)
-        res = dialog.run()
-        dialog.hide()
-        if res == gtk.RESPONSE_ACCEPT:
-            self.settings = dialog.getSettings()
-        dialog.destroy()
+        pass
+    def _coolCb(self, unused):
+        print "ok"
 
     def _startRenderAndUpload(self):
-        # TODO: These settings should:
-        #  * Have a page in the assistant
-        #  * Be incredibly narrowed down for the YouTube use case:
-        #     * WebM (vp8/vorbis) is always appropriate
-        #     * We could offer for example three quality categories
-        #
-        # In the mean time, pop up the entire settings-dialog:
-        self._stupidlyGetSettingsFromUser()
 
         self.has_started_rendering = True
+        print "et ben ?"
         
         # Start uploading:
         self.yt.upload(lambda: PipeWrapper(open(self.fifoname, 'rb')), self.metadata, self._uploadDoneCb)
@@ -225,8 +223,13 @@ storage will not be secure. Install python-gnomekeyring.")
 
     def updatePosition(self, fraction, text):
         self.progressbar.set_fraction(fraction)
-        if text is not None:
+        print fraction, text
+        if text is not None and fraction < 0.99:
             self.progressbar.set_text(_("About %s left") % text)
+        elif fraction < 0.5:
+            self.progressbar.set_text(_("Starting rendering"))
+        elif fraction > 0.8:
+            self.progressbar.set_text(_("Rendering done, finishing uploading"))
 
     def _uploadDoneCb(self, result):
         print "ok"
