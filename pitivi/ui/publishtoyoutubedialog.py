@@ -62,17 +62,18 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         if unsecure_storing :
             self.widgets["checkbutton1"].set_label("Remember me ! Warning : \
 storage will not be secure. Install python-gnomekeyring.")
+            if self.app_settings.login:
+                self.username.set_text(self.app_settings.login)
+                self.password.set_text(self.app_settings.password)
+        elif "pitivi" in gk.list_keyring_names_sync():
+            item_keys = gk.list_item_ids_sync('pitivi')
+            gk.unlock_sync('pitivi', 'gkpass')
+            item_info = gk.item_get_info_sync('pitivi', item_keys[0])
+            if item_info :
+                self.username.set_text(item_info.get_display_name())
+                self.password.set_text(item_info.get_secret())
+            gk.lock_sync('pitivi')
         self.remember_me = False
-        item_keys = gk.list_item_ids_sync('pitivi')
-        gk.unlock_sync('pitivi', 'gkpass')
-        item_info = gk.item_get_info_sync('pitivi', item_keys[0])
-        if item_info :
-            self.username.set_text(item_info.get_display_name())
-            self.password.set_text(item_info.get_secret())
-        elif self.app_settings.login:
-            self.username.set_text(self.app_settings.login)
-            self.password.set_text(self.app_settings.password)
-        
         self.description = self.widgets["description"]
 
         self.progressbar = self.widgets["progressbar"]
