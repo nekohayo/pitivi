@@ -30,11 +30,16 @@ from pitivi.actioner import Renderer
 from projectsettings import ProjectSettingsDialog
 from pitivi.youtube_glib import AsyncYT, PipeWrapper
 from gettext import gettext as _
+from gtk import ProgressBar
+from gobject import timeout_add
+from string import ascii_lowercase, ascii_uppercase, maketrans, translate
 try :
     import gnomekeyring as gk
     unsecure_storing = False
 except :
     unsecure_storing = True
+
+catlist = ['Film', 'Autos', 'Music', 'Animals', 'Sports', 'Travel', 'Games', 'Comedy', 'People', 'News', 'Entertainment', 'Education', 'Howto', 'Nonprofit', 'Tech']
 
 class PublishToYouTubeDialog(GladeWindow, Renderer):
     glade_file = 'publishtoyoutubedialog.glade'
@@ -56,7 +61,7 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
         self.settings = self.oldsettings.copy()
         self.settings.setEncoders(muxer='avimux', vencoder='xvidenc', aencoder="lamemp3enc")
         self.app.project.setSettings(self.settings)
-        print getattr(self.settings, "vcodecsettings"), "cool ! "
+        self.app.publish_button.set_sensitive(False)
 
         #Auto-completion
         if unsecure_storing :
@@ -73,10 +78,20 @@ storage will not be secure. Install python-gnomekeyring.")
                 self.username.set_text(item_info.get_display_name())
                 self.password.set_text(item_info.get_secret())
             gk.lock_sync('pitivi')
+
         self.remember_me = False
         self.description = self.widgets["description"]
-
-        self.progressbar = self.widgets["progressbar"]
+        self.tags = self.widgets["tags"]
+        self.categories = gtk.combo_box_new_text()
+        self.widgets["table2"].attach(self.categories, 1, 2, 3, 4)
+        self.categories.show()
+        self.categories.set_title("Choose a category")
+        self.hbox = gtk.HBox()
+        self.progressbar = gtk.ProgressBar()
+        self.stopbutton = gtk.ToolButton(gtk.STOCK_CANCEL)
+        self.hbox.pack_start(self.progressbar)
+        self.hbox.pack_start(self.stopbutton)
+        self.taglist = []
 
         # Assistant pages
         self.login_page = self.window.get_nth_page(0)
@@ -84,7 +99,13 @@ storage will not be secure. Install python-gnomekeyring.")
         self.render_page = self.window.get_nth_page(2)
         self.announce_page = self.window.get_nth_page(3)
 
+        for e in catlist:
+            self.categories.append_text(e)
+
         self.description.get_buffer().connect("changed", self._descriptionChangedCb)
+        self.categories.connect("changed", self._categoryChangedCb)
+        self.stopbutton.connect('clicked', self._finishCb)
+        self.mainquitsignal = self.app.connect('destroy', self._mainQuitCb)
 
         self.window.connect("delete-event", self._deleteEventCb)
 
@@ -104,14 +125,16 @@ storage will not be secure. Install python-gnomekeyring.")
             "title": "",
             "description": "",
             "private": False,
+            "category": None,
+            "tags": "",
         }
         self.has_started_rendering = False
 
     def _shutDown(self):
         self.debug("shutting down")
-        self.yt.stop()
-        self.window.destroy()
         self.app.project.setSettings(self.oldsettings)
+        self.app.publish_button.set_sensitive(True)
+        self.app.handler_disconnect(self.mainquitsignal)
 
         try:
             os.remove(self.fifoname)
@@ -125,6 +148,8 @@ storage will not be secure. Install python-gnomekeyring.")
 
         # Abort recording
         self.removeAction()
+        self.yt.stop()
+        self.window.destroy()
         self.destroy()
 
     def _storePassword(self):
@@ -134,7 +159,6 @@ storage will not be secure. Install python-gnomekeyring.")
             self.app_settings.storeSettings()
         else :
             if "pitivi" not in gk.list_keyring_names_sync():
-                print "hein ?"
                 gk.create_sync('pitivi', 'gkpass')
             atts = {'username':'pitivi',
                     'server':'Youtube',
@@ -143,6 +167,11 @@ storage will not be secure. Install python-gnomekeyring.")
                    }
             a = gk.item_create_sync('pitivi', gk.ITEM_GENERIC_SECRET,
                 self.username.get_text(), atts, self.password.get_text(), True)
+
+    def _mainQuitCb(self, ignored):
+        self.yt.stop()
+        self.window.destroy()
+        self.destroy()
 
     def _deleteEventCb(self, window, event):
         self.debug("delete event")
@@ -185,13 +214,37 @@ storage will not be secure. Install python-gnomekeyring.")
         ])
         self.window.set_page_complete(self.metadata_page, is_complete)
 
-    def _titleChangedCb(self, widget):
-        self.metadata["title"] = widget.get_text()
+    def _titleChangedCb(self, entry):
+        self.metadata["title"] = entry.get_text()
         self._update_metadata_page_complete()
 
     def _descriptionChangedCb(self, buffer):
         self.metadata["description"] = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
         self._update_metadata_page_complete()
+
+    def _newTagCb(self, entry):
+        letter_set = frozenset(ascii_lowercase + ascii_uppercase)
+        tab = maketrans(ascii_lowercase + ascii_uppercase, ascii_lowercase * 2)
+        deletions = ''.join(ch for ch in map(chr,range(256)) if ch not in letter_set)
+        text = translate(entry.get_text(), tab, deletions)
+        if len(text) < 2:
+            entry.set_sensitive(False)
+            entry.set_text(" One-letter tags ain't admitted")
+            timeout_add(1000, entry.set_text, "")
+            timeout_add (1000, entry.set_sensitive, True)
+            return
+
+        if self.metadata["tags"] != "" and text != "" and self.metadata["tags"].count(",") < 6 and text not in self.taglist:
+            self.metadata["tags"] = self.metadata["tags"] + ", " + text
+            self.taglist.append(text)
+
+        elif text != "" and self.metadata["tags"].count(",") < 6 and text not in self.taglist:
+            self.metadata["tags"] = text
+            self.taglist.append(text)
+        entry.set_text('')
+
+    def _categoryChangedCb(self, combo):
+        self.metadata["category"] = combo.get_active_text()
 
     def _prepareCb(self, assistant, page):
         if page == self.render_page and not self.has_started_rendering:
@@ -206,39 +259,54 @@ storage will not be secure. Install python-gnomekeyring.")
         else:
             self.metadata["private"] = False
 
-    def _stupidlyGetSettingsFromUser(self):
-        pass
-    def _coolCb(self, unused):
-        print "ok"
-
     def _startRenderAndUpload(self):
 
         self.has_started_rendering = True
-        print "et ben ?"
         
         # Start uploading:
         self.yt.upload(lambda: PipeWrapper(open(self.fifoname, 'rb')), self.metadata, self._uploadDoneCb)
 
         # Start rendering:
         self.startAction()
+        self.app.sourcelist.pack_end(self.hbox, False, False)
+        self.hbox.show_all()
+        self.progressbar.set_fraction(0)
+        self.visible = True
 
     def updatePosition(self, fraction, text):
         self.progressbar.set_fraction(fraction)
-        print fraction, text
+        if self.visible:
+            self.window.destroy()
+            self.visible = False
         if text is not None and fraction < 0.99:
             self.progressbar.set_text(_("About %s left") % text)
-        elif fraction < 0.5:
+        elif fraction < 0.05:
             self.progressbar.set_text(_("Starting rendering"))
-        elif fraction > 0.8:
+        elif fraction > 0.99:
             self.progressbar.set_text(_("Rendering done, finishing uploading"))
+            self.progressbar.set_pulse_step (0.05)
+            self.over = False
+            timeout_add (400, self._pulseCb)
+
+    def _pulseCb(self):
+        self.progressbar.pulse()
+        if not self.over :
+            timeout_add (400, self._pulseCb)
+        return False
+
+    def _finishCb(self, unused):
+        self.hbox.destroy()
+        self._shutDown()
 
     def _uploadDoneCb(self, result):
-        print "ok"
+        self.entry = gtk.Entry()
         if result[0] == "good":
-            print "good !"
             status, new_entry = result
-            self.window.set_page_complete(self.render_page, True)
-            self.window.set_current_page(self.window.get_current_page() + 1)
+            self.entry.set_text(new_entry.GetSwfUrl().split ("?")[0])
         else:
             status, exception = result
-            # TODO: Something about the error status
+            self.entry.set_text("error : " + status + exception)
+        self.over = True
+        self.progressbar.destroy()
+        self.hbox.pack_start (self.entry)
+        self.entry.show()

@@ -31,6 +31,7 @@ import threading
 from Queue import Queue
 
 
+
 CLIENT_ID = 'PiTiVi'
 DEVELOPER_KEY = 'AI39si5DzhNX8NS0iEZl2Xg3uYj54QG57atp6v5w-FDikhMRYseN6MOtR8Bfvss4C0rTSqyJaTvgN8MHAszepFXz-zg4Zg3XNQ'
 
@@ -43,18 +44,21 @@ class PipeWrapper:
 
 
 def upload(yt_service, metadata, filename):
+    text = metadata['category'] if metadata['category'] != None else 'Film'
+    print text
     my_media_group = gdata.media.Group(
+        keywords = gdata.media.Keywords(text=metadata["tags"]),
         title = gdata.media.Title(text=metadata["title"]),
         description = gdata.media.Description(description_type='plain', text=metadata["description"]),
         category = [
             gdata.media.Category(
-                text = 'Autos',
+                text = text,
                 scheme = 'http://gdata.youtube.com/schemas/2007/categories.cat',
-                label = 'Autos',
             ),
         ],
         private = gdata.media.Private() if metadata["private"] else None,
     )
+    print metadata['category']
     video_entry = gdata.youtube.YouTubeVideoEntry(
         media = my_media_group,
     )
@@ -101,7 +105,6 @@ class YTThread(threading.Thread):
             gobject.idle_add(callback, ("good", new_entry))
         except Exception, e:
             gobject.idle_add(callback, ("bad", e))
-
 
 class AsyncYT:
     def __init__(self):
