@@ -2,7 +2,7 @@
 #
 #       ui/publishtoyoutubedialog.py
 #
-# Copyright (c) 2010, Magnus Hoff <maghoff@gmail.com>
+# Copyright (c) 2010, Mathieu Duponchelle <seeed@laposte.net>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -23,16 +23,18 @@
 Dialog for publishing to YouTube
 """
 
-import tempfile, os, gtk
+import gtk
+import time
+import thread
+from gst import SECOND
 from pitivi.log.loggable import Loggable
 from pitivi.ui.glade import GladeWindow
 from pitivi.actioner import Renderer
-from projectsettings import ProjectSettingsDialog
-from pitivi.youtube_glib import AsyncYT, PipeWrapper
+from pitivi.youtube_glib import YTUploader
 from gettext import gettext as _
-from gtk import ProgressBar
 from gobject import timeout_add
 from string import ascii_lowercase, ascii_uppercase, maketrans, translate
+from pitivi.utils import beautify_length
 try :
     import gnomekeyring as gk
     unsecure_storing = False
@@ -51,6 +53,7 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
 
         self.app = app
         self.pipeline = pipeline
+        self.project = project
 
         # UI widgets
         self.login = self.widgets["login"]
@@ -79,19 +82,33 @@ storage will not be secure. Install python-gnomekeyring.")
                 self.password.set_text(item_info.get_secret())
             gk.lock_sync('pitivi')
 
-        self.remember_me = False
+        self.uploader = YTUploader()
         self.description = self.widgets["description"]
         self.tags = self.widgets["tags"]
         self.categories = gtk.combo_box_new_text()
         self.widgets["table2"].attach(self.categories, 1, 2, 3, 4)
         self.categories.show()
         self.categories.set_title("Choose a category")
-        self.hbox = gtk.HBox()
-        self.progressbar = gtk.ProgressBar()
+        for e in catlist:
+            self.categories.append_text(e)
+
+        self.renderbar = self.widgets["renderbar"]
+        self.uploadbar = gtk.ProgressBar()
         self.stopbutton = gtk.ToolButton(gtk.STOCK_CANCEL)
-        self.hbox.pack_start(self.progressbar)
-        self.hbox.pack_start(self.stopbutton)
+        self.hbox = gtk.HBox()
+        self.hbox.pack_start(self.uploadbar)
+        self.hbox.pack_end(self.stopbutton)
         self.taglist = []
+
+        self.fileentry = self.widgets["fileentry"]
+        self.updateFilename(self.project.name)
+        self.filebutton = gtk.FileChooserButton("Select a file")
+        self.widgets["table2"].attach(self.filebutton, 1, 2, 5, 6)
+        self.filebutton.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
+        self.filebutton.set_current_folder(self.app.settings.lastExportFolder)
+        self.filebutton.show()
+
+        self.remember_me = False
 
         # Assistant pages
         self.login_page = self.window.get_nth_page(0)
@@ -99,28 +116,13 @@ storage will not be secure. Install python-gnomekeyring.")
         self.render_page = self.window.get_nth_page(2)
         self.announce_page = self.window.get_nth_page(3)
 
-        for e in catlist:
-            self.categories.append_text(e)
-
         self.description.get_buffer().connect("changed", self._descriptionChangedCb)
         self.categories.connect("changed", self._categoryChangedCb)
         self.stopbutton.connect('clicked', self._finishCb)
         self.mainquitsignal = self.app.connect('destroy', self._mainQuitCb)
-
+        self.connect("eos", self._renderingDoneCb)
         self.window.connect("delete-event", self._deleteEventCb)
 
-        self.tmpdir = tempfile.mkdtemp()
-        self.fifoname = os.path.join(self.tmpdir, 'pitivi_rendering_fifo')
-        os.mkfifo(self.fifoname)
-
-        # TODO: This is probably not the best way to build an URL
-        #self.outfile = 'file:/home/mag/test.webm' #'file:' + self.fifoname
-        outfile = 'file://' + self.fifoname
-
-        Renderer.__init__(self, project, pipeline, outfile = outfile)
-
-        # YouTube integration
-        self.yt = AsyncYT()
         self.metadata = {
             "title": "",
             "description": "",
@@ -130,27 +132,8 @@ storage will not be secure. Install python-gnomekeyring.")
         }
         self.has_started_rendering = False
 
-    def _shutDown(self):
-        self.debug("shutting down")
-        self.app.project.setSettings(self.oldsettings)
-        self.app.publish_button.set_sensitive(True)
-        self.app.handler_disconnect(self.mainquitsignal)
-
-        try:
-            os.remove(self.fifoname)
-        except OSError:
-            pass
-
-        try:
-            os.rmdir(self.tmpdir)
-        except OSError:
-            pass
-
-        # Abort recording
-        self.removeAction()
-        self.yt.stop()
-        self.window.destroy()
-        self.destroy()
+    def updateFilename(self, name):
+        self.fileentry.set_text(name + ".avi")
 
     def _storePassword(self):
         if unsecure_storing:
@@ -168,18 +151,51 @@ storage will not be secure. Install python-gnomekeyring.")
             a = gk.item_create_sync('pitivi', gk.ITEM_GENERIC_SECRET,
                 self.username.get_text(), atts, self.password.get_text(), True)
 
-    def _mainQuitCb(self, ignored):
-        self.yt.stop()
+    def _update_metadata_page_complete(self):
+        is_complete = all([
+            len(self.metadata["title"]) != 0,
+            len(self.metadata["description"]) != 0,
+        ])
+        self.window.set_page_complete(self.metadata_page, is_complete)
+
+    def _startRendering(self):
+
+        self.has_started_rendering = True
+
+        # Start rendering:
+        self.filename = self.filebutton.get_uri() + "/" + self.fileentry.get_text()
+        Renderer.__init__(self, self.project, self.pipeline, outfile =
+                self.filename)
+        self.app.set_sensitive(False)
+        self.startAction()
+        self.renderbar.set_fraction(0)
+        self.visible = True
+
+    def updatePosition(self, fraction, estimated, uploading = False):
+        if not uploading:
+            self.renderbar.set_fraction(fraction)
+            self.app.set_title(_("%d%% Rendered") % int(100 * fraction))
+        else:
+            self.uploadbar.set_fraction(fraction)
+        if estimated and not uploading:
+            self.renderbar.set_text(_("About %s left in rendering") % estimated)
+        elif estimated and uploading:
+            self.uploadbar.set_text(_("About %s left in uploading") % estimated)
+
+    def _shutDown(self):
+        self.debug("shutting down")
+        if self.uploader.uploader:
+            self.uploader.uploader.run = False
+        self.app.project.setSettings(self.oldsettings)
+        self.app.set_sensitive(True)
+        self.app.publish_button.set_sensitive(True)
+        self.app.handler_disconnect(self.mainquitsignal)
+
+        # Abort recording
+        if self.has_started_rendering:
+            self.removeAction()
         self.window.destroy()
         self.destroy()
-
-    def _deleteEventCb(self, window, event):
-        self.debug("delete event")
-        self._shutDown()
-
-    def _cancelCb(self, ignored):
-        self.debug("cancel event")
-        self._shutDown()
 
     def _rememberMeCb(self, button):
         self.remember_me = False
@@ -190,29 +206,20 @@ storage will not be secure. Install python-gnomekeyring.")
         self.debug("login clicked")
         self.login_status.set_text("Logging in...")
         # TODO: This should activate a throbber
-        self.yt.authenticate_with_password(self.username.get_text(), self.password.get_text(), self._loginResultCb)
+        thread.start_new_thread (self.uploader.authenticate_with_password, (self.username.get_text(),
+            self.password.get_text(), self._loginResultCb))
 
     def _loginResultCb(self, result):
         # TODO: The throbber should now be deactivated
-        status = result[0]
-        if status == 'good':
-            status, login_token = result
+        if result == 'good':
             if self.remember_me:
                 self._storePassword()
-            self.login_status.set_text("Logged in")
             self.window.set_page_complete(self.login_page, True)
             self.window.set_current_page(self.window.get_current_page() + 1)
         else:
             status, exception = result
             self.login_status.set_text(str(exception))
             self.window.set_page_complete(self.login_page, False)
-
-    def _update_metadata_page_complete(self):
-        is_complete = all([
-            len(self.metadata["title"]) != 0,
-            len(self.metadata["description"]) != 0,
-        ])
-        self.window.set_page_complete(self.metadata_page, is_complete)
 
     def _titleChangedCb(self, entry):
         self.metadata["title"] = entry.get_text()
@@ -246,67 +253,58 @@ storage will not be secure. Install python-gnomekeyring.")
     def _categoryChangedCb(self, combo):
         self.metadata["category"] = combo.get_active_text()
 
-    def _prepareCb(self, assistant, page):
-        if page == self.render_page and not self.has_started_rendering:
-            self._startRenderAndUpload()
-
-    def _destroyCb (self, ignored):
-        self._shutDown()
-
     def _changeStatusCb (self, button):
         if button.get_active():
             self.metadata["private"] = True
         else:
             self.metadata["private"] = False
 
-    def _startRenderAndUpload(self):
+    def _prepareCb(self, assistant, page):
+        if page == self.render_page and not self.has_started_rendering:
+            self._startRendering()
 
-        self.has_started_rendering = True
-        
-        # Start uploading:
-        self.yt.upload(lambda: PipeWrapper(open(self.fifoname, 'rb')), self.metadata, self._uploadDoneCb)
-
-        # Start rendering:
-        self.startAction()
+    def _renderingDoneCb(self, data):
+        self.app.set_sensitive(True)
+        self.app.set_title(_("PiTiVi"))
+        self.timestarted = time.time()
+        self.window.hide()
         self.app.sourcelist.pack_end(self.hbox, False, False)
         self.hbox.show_all()
-        self.progressbar.set_fraction(0)
-        self.visible = True
+        self.filename = self.filename.split("://")[1]
+        self.uploader.upload(self.filename, self.metadata, self._uploadProgressCb, self._uploadDoneCb)
 
-    def updatePosition(self, fraction, text):
-        self.progressbar.set_fraction(fraction)
-        if self.visible:
-            self.window.destroy()
-            self.visible = False
-        if text is not None and fraction < 0.99:
-            self.progressbar.set_text(_("About %s left") % text)
-        elif fraction < 0.05:
-            self.progressbar.set_text(_("Starting rendering"))
-        elif fraction > 0.99:
-            self.progressbar.set_text(_("Rendering done, finishing uploading"))
-            self.progressbar.set_pulse_step (0.05)
-            self.over = False
-            timeout_add (400, self._pulseCb)
+    def _uploadProgressCb(self, done, total):
+        timediff = time.time() - self.timestarted
+        fraction = float(min(done, total)) / float(total)
+        if timediff > 3.0:
+            totaltime = (timediff * float(total) / float(done)) - timediff
+            text = beautify_length(int(totaltime * SECOND))
+            self.updatePosition(fraction, text, uploading = True)
 
-    def _pulseCb(self):
-        self.progressbar.pulse()
-        if not self.over :
-            timeout_add (400, self._pulseCb)
-        return False
+    def _uploadDoneCb(self, video_entry):
+        print "done !"
+        self.entry = gtk.Entry()
+        link = video_entry.find_html_link().split("&")[0]
+        self.entry.set_text(link)
+        self.uploadbar.destroy()
+        self.hbox.pack_start (self.entry)
+        self.entry.show()
+
+    def _mainQuitCb(self, ignored):
+        self.window.destroy()
+        self.destroy()
+
+    def _deleteEventCb(self, window, event):
+        self.debug("delete event")
+        self._shutDown()
+
+    def _cancelCb(self, ignored):
+        self.debug("cancel event")
+        self._shutDown()
+
+    def _destroyCb (self, ignored):
+        self._shutDown()
 
     def _finishCb(self, unused):
         self.hbox.destroy()
         self._shutDown()
-
-    def _uploadDoneCb(self, result):
-        self.entry = gtk.Entry()
-        if result[0] == "good":
-            status, new_entry = result
-            self.entry.set_text(new_entry.GetSwfUrl().split ("?")[0])
-        else:
-            status, exception = result
-            self.entry.set_text("error : " + status + exception)
-        self.over = True
-        self.progressbar.destroy()
-        self.hbox.pack_start (self.entry)
-        self.entry.show()

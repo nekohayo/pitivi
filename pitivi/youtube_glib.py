@@ -2,7 +2,7 @@
 #
 #       youtube_glib.py
 #
-# Copyright (c) 2010, Magnus Hoff <maghoff@gmail.com>
+# Copyright (c) 2010, Mathieu Duponchelle <seeed@laposte.net>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -26,105 +26,93 @@ The most interesting entrypoint is the AsyncYT class.
 """
 
 import gobject
-import gdata.youtube, gdata.youtube.service
-import threading
-from Queue import Queue
+import gdata.youtube
+import gdata.youtube.client
+import gdata.client
+import gdata.youtube.data
+from os.path import getsize
+import thread
 
-
-
-CLIENT_ID = 'PiTiVi'
+APP_NAME = 'PiTiVi'
 DEVELOPER_KEY = 'AI39si5DzhNX8NS0iEZl2Xg3uYj54QG57atp6v5w-FDikhMRYseN6MOtR8Bfvss4C0rTSqyJaTvgN8MHAszepFXz-zg4Zg3XNQ'
+CREATE_SESSION_URI = '/resumable/feeds/api/users/default/uploads'
 
-class PipeWrapper:
-    """Helper class to make gdata work with pipes"""
-    def __init__(self, f):
-        self._f = f
-    def read(self, *args):
-        return self._f.read(*args)
+class ResumableYouTubeUploader(object):
 
+    def __init__(self, filepath, client):
 
-def upload(yt_service, metadata, filename):
-    text = metadata['category'] if metadata['category'] != None else 'Film'
-    print text
-    my_media_group = gdata.media.Group(
-        keywords = gdata.media.Keywords(text=metadata["tags"]),
-        title = gdata.media.Title(text=metadata["title"]),
-        description = gdata.media.Description(description_type='plain', text=metadata["description"]),
-        category = [
-            gdata.media.Category(
-                text = text,
-                scheme = 'http://gdata.youtube.com/schemas/2007/categories.cat',
-            ),
-        ],
-        private = gdata.media.Private() if metadata["private"] else None,
-    )
-    print metadata['category']
-    video_entry = gdata.youtube.YouTubeVideoEntry(
-        media = my_media_group,
-    )
-    new_entry = yt_service.InsertVideoEntry(video_entry, filename)
-    print "c'est fait petit"
-    return new_entry
+        self.client = client
+        self.client.host = "uploads.gdata.youtube.com"
 
+        self.f = open(filepath)
+        file_size = getsize(self.f.name)
 
-class YTThread(threading.Thread):
-    def __init__(self, queue):
-        threading.Thread.__init__(self)
-        self._queue = queue
-
-    def run(self):
-        self._yt_service = gdata.youtube.service.YouTubeService()
-        self._yt_service.source = CLIENT_ID
-        self._yt_service.developer_key = DEVELOPER_KEY
-        self._yt_service.client_id = CLIENT_ID
-
-        self._running = True
-        while self._running:
-            task = self._queue.get()
-            task()
-
-    def yt_stop(self):
-        self._running = False
-
-    def authenticate_with_password(self, username, password, callback):
-        try:
-            self._yt_service.email = username
-            self._yt_service.password = password
-            self._yt_service.ProgrammaticLogin()
-            gobject.idle_add(callback, ("good", self._yt_service.GetClientLoginToken()))
-        except Exception, e:
-            gobject.idle_add(callback, ("bad", e))
-
-    def authenticate_with_token(self, token, callback):
-        self._yt_service.SetClientLoginToken(token)
-        gobject.idle_add(callback, token)
-
-    def upload(self, filename, metadata, callback):
-        try:
-            new_entry = upload(self._yt_service, metadata, filename())
-            gobject.idle_add(callback, ("good", new_entry))
-        except Exception, e:
-            gobject.idle_add(callback, ("bad", e))
-
-class AsyncYT:
-    def __init__(self):
-        self._queue = Queue()
-        self._yt_thread = YTThread(self._queue)
-        self._yt_thread.start()
+        self.uploader = gdata.client.ResumableUploader(
+            self.client, self.f, "video/avi", file_size,
+            chunk_size=1024*64, desired_class=gdata.youtube.data.VideoEntry)
 
     def __del__(self):
-        """This is an absolute last resort. Please call stop() manually instead"""
-        self.stop()
+        if self.uploader is not None:
+            self.uploader.file_handle.close()
+
+    def uploadInManualChunks(self, new_entry, on_chunk_complete, callback):
+        uri = CREATE_SESSION_URI
+        self.run = True
+
+        self.uploader._InitSession(uri, entry=new_entry, headers={"X-GData-Key": "key=" + DEVELOPER_KEY,
+                                                                  "Slug" : None})
+
+        start_byte = 0
+        entry = None
+
+        while not entry and self.run:
+            entry = self.uploader.UploadChunk(start_byte, self.uploader.file_handle.read(self.uploader.chunk_size))
+            start_byte += self.uploader.chunk_size
+            on_chunk_complete(start_byte, self.uploader.total_file_size)
+        callback(entry)
+
+
+class UploadBase():
+    def __init__(self):
+        self.uploader = None
 
     def authenticate_with_password(self, username, password, callback):
-        self._queue.put(lambda: self._yt_thread.authenticate_with_password(username, password, callback))
-
-    def authenticate_with_token(self, token, callback):
-        self._queue.put(lambda: self._yt_thread.authenticate_with_token(token, callback))
+        pass
 
     def upload(self, filename, metadata, callback):
-        self._queue.put(lambda: self._yt_thread.upload(filename, metadata, callback))
+        pass
 
-    def stop(self):
-        self._queue.put(self._yt_thread.yt_stop)
-        self._yt_thread.join()
+class YTUploader(UploadBase):
+    def __init__(self):
+        UploadBase.__init__(self)
+
+    def authenticate_with_password(self, username, password, callback):
+        try:
+            self.client = gdata.youtube.client.YouTubeClient(source=APP_NAME)
+            self.client.ssl = False
+            self.client.http_client.debug = False
+            self.convert = None
+            self.client.ClientLogin(username, password, self.client.source)
+            gobject.idle_add(callback, ("good"))
+        except Exception, e:
+            gobject.idle_add(callback, ("bad", e))
+
+    def upload(self, filename, metadata, progressCb, doneCb):
+        self.uploader = ResumableYouTubeUploader(filename, self.client)
+
+        text = metadata['category'] if metadata['category'] != None else 'Film'
+        print text
+        my_media_group = gdata.media.Group(
+            keywords = gdata.media.Keywords(text=metadata["tags"]),
+            title = gdata.media.Title(text=metadata["title"]),
+            description = gdata.media.Description(description_type='plain', text=metadata["description"]),
+            category = [
+                gdata.media.Category(
+                    text = text,
+                    scheme = 'http://gdata.youtube.com/schemas/2007/categories.cat',
+                ),
+            ],
+            private = gdata.media.Private() if metadata["private"] else None,
+        )
+        new_entry = gdata.youtube.YouTubeVideoEntry(media=my_media_group)
+        thread.start_new_thread(self.uploader.uploadInManualChunks, (new_entry, progressCb, doneCb))

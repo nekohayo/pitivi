@@ -33,6 +33,19 @@ import gst
 from urllib import unquote
 import webbrowser
 
+try:
+    import gconf
+except:
+    HAVE_GCONF = False
+else:
+    HAVE_GCONF = True
+
+try:
+    import gdata.youtube.client
+    HAVE_GDATA_2 = True
+except:
+    HAVE_GDATA_2 = False
+
 from gettext import gettext as _
 from gtk import RecentManager
 
@@ -744,7 +757,8 @@ class PitiviMainWindow(gtk.Window, Loggable):
         self._connectToProjectSources(project.sources)
         can_render = project.timeline.duration > 0
         self.render_button.set_sensitive(can_render)
-        self.publish_button.set_sensitive(can_render)
+        if HAVE_GDATA_2:
+            self.publish_button.set_sensitive(can_render)
         self._syncDoUndo(self.app.action_log)
 
         if self._missingUriOnLoading:
@@ -1062,7 +1076,8 @@ class PitiviMainWindow(gtk.Window, Loggable):
         else:
             sensitive = False
         self.render_button.set_sensitive(sensitive)
-        self.publish_button.set_sensitive(sensitive)
+        if HAVE_GDATA_2:
+            self.publish_button.set_sensitive(sensitive)
 
 ## other
 

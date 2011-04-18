@@ -19,6 +19,9 @@
       <placeholder/>
     </child>
     <child>
+      <placeholder/>
+    </child>
+    <child>
       <widget class="GtkVBox" id="vbox2">
         <property name="visible">True</property>
         <property name="border_width">12</property>
@@ -180,7 +183,7 @@
         <child>
           <widget class="GtkTable" id="table2">
             <property name="visible">True</property>
-            <property name="n_rows">5</property>
+            <property name="n_rows">7</property>
             <property name="n_columns">2</property>
             <child>
               <widget class="GtkLabel" id="label2">
@@ -323,6 +326,42 @@
               </packing>
             </child>
             <child>
+              <widget class="GtkEntry" id="fileentry">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="invisible_char">&#x25CF;</property>
+              </widget>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="right_attach">2</property>
+                <property name="top_attach">6</property>
+                <property name="bottom_attach">7</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="label12">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Folder :</property>
+              </widget>
+              <packing>
+                <property name="top_attach">5</property>
+                <property name="bottom_attach">6</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="label11">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">File name:</property>
+              </widget>
+              <packing>
+                <property name="top_attach">6</property>
+                <property name="bottom_attach">7</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
               <placeholder/>
             </child>
           </widget>
@@ -339,16 +378,18 @@
       <widget class="GtkVBox" id="vbox5">
         <property name="visible">True</property>
         <child>
-          <widget class="GtkLabel" id="label12">
-            <property name="visible">True</property>
-            <property name="label" translatable="yes">Initializing ..</property>
-          </widget>
-          <packing>
-            <property name="position">0</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
-          <placeholder/>
+          <widget class="GtkProgressBar" id="renderbar">
+            <property name="visible">True</property>
+          </widget>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="pack_type">end</property>
+            <property name="position">0</property>
+          </packing>
         </child>
       </widget>
       <packing>
