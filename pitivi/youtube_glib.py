@@ -31,7 +31,13 @@ import gdata.youtube.client
 import gdata.client
 import gdata.youtube.data
 from os.path import getsize
+
 import thread
+from httplib2 import Http
+from urllib import urlencode
+import json
+import urllib2
+import pycurl
 
 APP_NAME = 'PiTiVi'
 DEVELOPER_KEY = 'AI39si5DzhNX8NS0iEZl2Xg3uYj54QG57atp6v5w-FDikhMRYseN6MOtR8Bfvss4C0rTSqyJaTvgN8MHAszepFXz-zg4Zg3XNQ'
@@ -116,3 +122,88 @@ class YTUploader(UploadBase):
         )
         new_entry = gdata.youtube.YouTubeVideoEntry(media=my_media_group)
         thread.start_new_thread(self.uploader.uploadInManualChunks, (new_entry, progressCb, doneCb))
+
+class DMUploader(UploadBase):
+    def __init__(self):
+        UploadBase.__init__(self)
+        self.BASE='https://api.dailymotion.com/json'
+        self.KEY='0456f8e8efa7a30577d8'
+        self.SECRET='fa5c3ae28abf12e73df045bfa161601bd42c2999'
+        self.OAUTH='https://api.dailymotion.com/oauth/token'
+
+    def authenticate_with_password(self, username, password, callback):
+        #OAuth2 to fetch access_token and refresh_token 
+        values = {'grant_type' : 'password',
+                  'client_id' : self.KEY,
+                  'client_secret' : self.SECRET,
+                  'username' : username,
+                  'password' : password,
+                  'scope':'write read'
+                  }
+        data = urlencode(values)
+        try:
+            req = urllib2.Request(self.OAUTH, data)
+            response = urllib2.urlopen(req)
+            result = json.load(response)
+            self.access_token = result['access_token']
+            self.refresh_token = result['refresh_token']
+            self.UURL= '?access_token='+self.access_token
+            gobject.idle_add(callback, ("good"))
+        except Exception, e:
+            gobject.idle_add(callback, ("bad", e))
+
+    def upload(self, filepath, metadata, progressCb, doneCb):
+
+        self.filepath = filepath
+        self.progressCb = progressCb
+        self.doneCb = doneCb
+        self.metadata = metadata
+
+        job = json.dumps({"call":"file.upload", "args":None})
+        req = urllib2.Request(self.BASE+self.UURL, job, {'content-type':'application/json'})
+        response = urllib2.urlopen(req)
+        result = json.load(response)
+        upload_url= result['result']['upload_url']
+        self.uploader = DailyMotionFileUploader(filepath, upload_url)
+        thread.start_new_thread(self.uploader.UploadFile, 
+                    (self.on_upload_progress, self.on_upload_finish))
+
+    def on_upload_finish(self, response):
+        result = json.loads(response)
+
+        job = json.dumps({"call":"video.create","args":{"url":result['url']}})
+        req = urllib2.Request(self.BASE+self.UURL, job, {'content-type': 'application/json'})
+        responsed = urllib2.urlopen(req)
+        result = json.load(responsed)
+        id = result['result']['id']
+
+        #publish video
+        job=json.dumps({"call":"video.edit", "args":{"id":id, "title":self.metadata['title'],
+                    "tags":self.metadata['tags'], "channel":self.metadata['category'],
+                    "description":self.metadata['description'], "published":"true"}})
+        req = urllib2.Request(self.BASE+self.UURL, job, {'content-type': 'application/json'})
+        response = urllib2.urlopen(req)
+        video_url = 'http://www.dailymotion.com/video/' + id
+        self.doneCb(video_url)
+
+    def on_upload_progress(self, dt, dd, utotal, udone):
+        if utotal and udone:
+            self.progressCb(udone, utotal)
+
+
+class DailyMotionFileUploader(object):
+    def __init__(self, filepath, upload_url):
+        self.upload_url = upload_url
+        self.filepath = filepath
+
+    def UploadFile(self,  on_upload_progress, on_upload_finish):
+        self.curl = pycurl.Curl()
+        self.curl.setopt(pycurl.POST, 1)
+        self.curl.setopt(pycurl.URL, str(self.upload_url))
+        self.curl.setopt(pycurl.NOPROGRESS, 0)
+        self.curl.setopt(self.curl.WRITEFUNCTION, on_upload_finish)
+        self.curl.setopt(self.curl.PROGRESSFUNCTION, on_upload_progress)
+        self.curl.setopt(self.curl.HTTPPOST, [
+          ("file", (self.curl.FORM_FILE, self.filepath))])
+        self.curl.perform()
+        self.curl.close()
