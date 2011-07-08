@@ -30,7 +30,7 @@ from gst import SECOND
 from pitivi.log.loggable import Loggable
 from pitivi.ui.glade import GladeWindow
 from pitivi.actioner import Renderer
-from pitivi.youtube_glib import YTUploader
+from pitivi.youtube_glib import YTUploader, DMUploader
 from gettext import gettext as _
 from gobject import timeout_add
 from string import ascii_lowercase, ascii_uppercase, maketrans, translate
@@ -40,6 +40,7 @@ try :
     unsecure_storing = False
 except :
     unsecure_storing = True
+import pycurl
 
 catlist = ['Film', 'Autos', 'Music', 'Animals', 'Sports', 'Travel', 'Games', 'Comedy', 'People', 'News', 'Entertainment', 'Education', 'Howto', 'Nonprofit', 'Tech']
 
@@ -250,6 +251,12 @@ storage will not be secure. Install python-gnomekeyring.")
             self.taglist.append(text)
         entry.set_text('')
 
+    def _videositeChangedCb(self, combo):
+        if combo.get_active_text() == "YouTube":
+            self.uploader=YTUploader()
+        else:
+            self.uploader = DMUploader()
+
     def _categoryChangedCb(self, combo):
         self.metadata["category"] = combo.get_active_text()
 
@@ -282,9 +289,11 @@ storage will not be secure. Install python-gnomekeyring.")
             self.updatePosition(fraction, text, uploading = True)
 
     def _uploadDoneCb(self, video_entry):
-        print "done !"
         self.entry = gtk.Entry()
-        link = video_entry.find_html_link().split("&")[0]
+        try:
+            link = video_entry.find_html_link().split("&")[0]
+        except:
+            link = video_entry
         self.entry.set_text(link)
         self.uploadbar.destroy()
         self.hbox.pack_start (self.entry)
