@@ -219,7 +219,7 @@ storage will not be secure. Install python-gnomekeyring.")
             self.window.set_current_page(self.window.get_current_page() + 1)
         else:
             status, exception = result
-            self.login_status.set_text(str(exception))
+            self.login_status.set_text('Unable to login')
             self.window.set_page_complete(self.login_page, False)
 
     def _titleChangedCb(self, entry):
