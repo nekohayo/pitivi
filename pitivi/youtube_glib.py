@@ -127,8 +127,8 @@ class DMUploader(UploadBase):
     def __init__(self):
         UploadBase.__init__(self)
         self.BASE='https://api.dailymotion.com/json'
-        self.KEY='0456f8e8efa7a30577d8'
-        self.SECRET='fa5c3ae28abf12e73df045bfa161601bd42c2999'
+        self.KEY='64c3248dee73203abbb3'
+        self.SECRET='25ed2b388125dfe92fff7b827a81231cabbb993e'
         self.OAUTH='https://api.dailymotion.com/oauth/token'
 
     def authenticate_with_password(self, username, password, callback):
