@@ -43,7 +43,11 @@ except :
     unsecure_storing = True
 import pycurl
 
-catlist = ['Film', 'Autos', 'Music', 'Animals', 'Sports', 'Travel', 'Games', 'Comedy', 'People', 'News', 'Entertainment', 'Education', 'Howto', 'Nonprofit', 'Tech']
+catlist = []
+
+dailymotion_cat = ['News', 'Shortfilms', 'Music', 'Sport', 'Tech', 'Travel', 'Auto', 'Creation', 'Webcam', 'People', 'Lifestyle', 'Fun', 'Videogames', 'Animals', 'School']
+
+youtube_cat = ['Film', 'Autos', 'Music', 'Animals', 'Sports', 'Travel', 'Games', 'Comedy', 'People', 'News', 'Entertainment', 'Education', 'Howto', 'Nonprofit', 'Tech']
 
 class PublishToWebDialog(Renderer):
 
@@ -88,10 +92,6 @@ storage will not be secure. Install python-gnomekeyring.")
         self.categories = gtk.combo_box_new_text()
         self.builder.get_object("table2").attach(self.categories, 1, 2, 3, 4)
 
-        self.categories.show()
-        self.categories.set_title("Choose a category")
-        for e in catlist:
-            self.categories.append_text(e)
 
         self.uploadbar = gtk.ProgressBar()
         self.stopbutton = gtk.ToolButton(gtk.STOCK_CANCEL)
@@ -263,9 +263,17 @@ storage will not be secure. Install python-gnomekeyring.")
 
     def _videositeChangedCb(self, combo):
         if combo.get_active_text() == "YouTube":
-            self.uploader=YTUploader()
+            catlist = youtube_cat
+            self.uploader = YTUploader()
         else:
+            catlist = dailymotion_cat
             self.uploader = DMUploader()
+
+        self.categories.show()
+        self.categories.set_title("Choose a category")
+        for e in catlist:
+            self.categories.append_text(e)
+
 
     def _categoryChangedCb(self, combo):
         self.metadata["category"] = combo.get_active_text()
