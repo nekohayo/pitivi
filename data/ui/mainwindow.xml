@@ -30,7 +30,7 @@
     </menu>
     <menu action="Library">
       <menuitem action="RenderProject" />
-      <menuitem action="PublishToYouTube" />
+      <menuitem action="PublishToWeb" />
       <separator />
       <placeholder name="SourceList" />
       <separator />

@@ -262,17 +262,18 @@ class PitiviMainWindow(gtk.Window, Loggable):
     def _recordCb(self, unused_button):
         self.showEncodingDialog(self.project)
 
-    def showPublishToYouTubeDialog(self, project, pause=True):
+    def showPublishToWebDialog(self, project, pause=True):
         #TODO: Document
 
-        from publishtoyoutubedialog import PublishToYouTubeDialog
+        from publishtoweb import PublishToWebDialog
 
         if pause:
             project.pipeline.pause()
-        win = PublishToYouTubeDialog(self, project)
+        win = PublishToWebDialog(self, project)
+
 
     def _publishCb(self, unused_button):
-        self.showPublishToYouTubeDialog(self.project)
+        self.showPublishToWebDialog(self.project)
 
     def _setActions(self, instance):
         PLAY = _("Start Playback")
@@ -295,7 +296,7 @@ class PitiviMainWindow(gtk.Window, Loggable):
              None, _("Edit the project settings"), self._projectSettingsCb),
             ("RenderProject", 'pitivi-render', _("_Render..."),
              None, _("Export your project as a finished movie"), self._recordCb),
-            ("PublishToYouTube", 'pitivi-publish' , _("_Publish to Web"),
+            ("PublishToWeb", 'pitivi-publish' , _("_Publish to Web"),
              None, _("Publish to Web"), self._publishCb),
             ("Undo", gtk.STOCK_UNDO,
              _("_Undo"),
@@ -356,7 +357,7 @@ class PitiviMainWindow(gtk.Window, Loggable):
                 # this will be set sensitive when the timeline duration changes
                 action.set_sensitive(False)
                 action.props.is_important = True
-            elif action_name == "PublishToYouTube":
+            elif action_name == "PublishToWeb":
                 self.publish_button = action
                 action.set_sensitive(False)
             elif action_name == "ImportfromCam":

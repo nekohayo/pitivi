@@ -20,7 +20,7 @@
 # Boston, MA 02111-1307, USA.
 
 """
-Dialog for publishing to YouTube
+Dialog for publishing to Web
 """
 
 import gtk
@@ -45,7 +45,7 @@ import pycurl
 
 catlist = ['Film', 'Autos', 'Music', 'Animals', 'Sports', 'Travel', 'Games', 'Comedy', 'People', 'News', 'Entertainment', 'Education', 'Howto', 'Nonprofit', 'Tech']
 
-class PublishToYouTubeDialog(Renderer):
+class PublishToWebDialog(Renderer):
 
     def __init__(self, app, project, pipeline=None):
         Loggable.__init__(self)
