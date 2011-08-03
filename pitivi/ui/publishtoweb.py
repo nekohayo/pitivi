@@ -31,7 +31,7 @@ from gst import SECOND
 from pitivi.log.loggable import Loggable
 from pitivi.actioner import Renderer
 from pitivi import configure
-from pitivi.youtube_glib import YTUploader, DMUploader
+from pitivi.uploader import YTUploader, DMUploader
 from gettext import gettext as _
 from gobject import timeout_add
 from string import ascii_lowercase, ascii_uppercase, maketrans, translate

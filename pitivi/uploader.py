@@ -1,6 +1,6 @@
 # PiTiVi , Non-linear video editor
 #
-#       youtube_glib.py
+#       uploader.py
 #
 # Copyright (c) 2010, Mathieu Duponchelle <seeed@laposte.net>
 #
