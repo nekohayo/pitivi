@@ -1,8 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<glade-interface>
-  <!-- interface-requires gtk+ 2.16 -->
+<interface>
+  <requires lib="gtk+" version="2.16"/>
   <!-- interface-naming-policy toplevel-contextual -->
-  <widget class="GtkAssistant" id="assistant1">
+  <object class="GtkListStore" id="liststore1">
+    <columns>
+      <!-- column-name item -->
+      <column type="gchararray"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0" translatable="yes">YouTube</col>
+      </row>
+      <row>
+        <col id="0" translatable="yes">DailyMotion</col>
+      </row>
+    </data>
+  </object>
+  <object class="GtkAssistant" id="publish-assistant">
+    <property name="visible">True</property>
     <property name="can_focus">False</property>
     <property name="border_width">12</property>
     <property name="title" translatable="yes">Publish to Web</property>
@@ -26,16 +41,22 @@
       <placeholder/>
     </child>
     <child>
-      <widget class="GtkVBox" id="vbox2">
+      <placeholder/>
+    </child>
+    <child>
+      <placeholder/>
+    </child>
+    <child>
+      <object class="GtkVBox" id="vbox2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="border_width">12</property>
         <child>
-          <widget class="GtkLabel" id="label7">
+          <object class="GtkLabel" id="label7">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">You need to successfully log in with a YouTube user account to proceed</property>
-          </widget>
+          </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
@@ -43,31 +64,31 @@
           </packing>
         </child>
         <child>
-          <widget class="GtkTable" id="table1">
+          <object class="GtkTable" id="table1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="n_rows">3</property>
             <property name="n_columns">2</property>
             <child>
-              <widget class="GtkLabel" id="label8">
+              <object class="GtkLabel" id="label8">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Username (&lt;i&gt;user&lt;/i&gt;@gmail.com): </property>
                 <property name="use_markup">True</property>
                 <property name="single_line_mode">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="x_options">GTK_FILL</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label9">
+              <object class="GtkLabel" id="label9">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Password: </property>
                 <property name="single_line_mode">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">1</property>
                 <property name="bottom_attach">2</property>
@@ -75,7 +96,7 @@
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="username">
+              <object class="GtkEntry" id="username">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">•</property>
@@ -83,14 +104,14 @@
                 <property name="secondary_icon_activatable">False</property>
                 <property name="primary_icon_sensitive">True</property>
                 <property name="secondary_icon_sensitive">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="password">
+              <object class="GtkEntry" id="password">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="visibility">False</property>
@@ -99,7 +120,7 @@
                 <property name="secondary_icon_activatable">False</property>
                 <property name="primary_icon_sensitive">True</property>
                 <property name="secondary_icon_sensitive">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
@@ -108,17 +129,19 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
-            </child>
-            <child>
-              <widget class="GtkComboBox" id="videosite">
+              <object class="GtkComboBox" id="videosite">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="model">liststore1</property>
                 <property name="active">0</property>
-                <property name="items" translatable="yes">YouTube
-DailyMotion</property>
                 <signal name="changed" handler="_videositeChangedCb" swapped="no"/>
-              </widget>
+                <child>
+                  <object class="GtkCellRendererText" id="cellrenderertext1"/>
+                  <attributes>
+                    <attribute name="text">0</attribute>
+                  </attributes>
+                </child>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
@@ -126,7 +149,10 @@ DailyMotion</property>
                 <property name="bottom_attach">3</property>
               </packing>
             </child>
-          </widget>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
@@ -134,23 +160,23 @@ DailyMotion</property>
           </packing>
         </child>
         <child>
-          <widget class="GtkAlignment" id="alignment1">
+          <object class="GtkAlignment" id="alignment1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">1</property>
             <property name="xscale">0</property>
             <property name="yscale">0</property>
             <child>
-              <widget class="GtkButton" id="login">
+              <object class="GtkButton" id="login">
                 <property name="label" translatable="yes">Log in</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <signal name="clicked" handler="_loginClickedCb" swapped="no"/>
-              </widget>
+              </object>
             </child>
-          </widget>
+          </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
@@ -158,7 +184,7 @@ DailyMotion</property>
           </packing>
         </child>
         <child>
-          <widget class="GtkCheckButton" id="checkbutton1">
+          <object class="GtkCheckButton" id="checkbutton1">
             <property name="label" translatable="yes">Remember me !</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -167,7 +193,7 @@ DailyMotion</property>
             <property name="relief">none</property>
             <property name="draw_indicator">True</property>
             <signal name="toggled" handler="_rememberMeCb" swapped="no"/>
-          </widget>
+          </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">False</property>
@@ -175,17 +201,17 @@ DailyMotion</property>
           </packing>
         </child>
         <child>
-          <widget class="GtkHBox" id="hbox1">
+          <object class="GtkHBox" id="hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <widget class="GtkLabel" id="label10">
+              <object class="GtkLabel" id="label10">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Status: </property>
                 <property name="single_line_mode">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
@@ -193,41 +219,41 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="login_status">
+              <object class="GtkLabel" id="login_status">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Not logged in</property>
                 <property name="single_line_mode">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">4</property>
               </packing>
             </child>
-          </widget>
+          </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">4</property>
           </packing>
         </child>
-      </widget>
+      </object>
       <packing>
         <property name="page_type">intro</property>
       </packing>
     </child>
     <child>
-      <widget class="GtkVBox" id="vbox1">
+      <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <widget class="GtkLabel" id="label1">
+          <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">Information about the video as it will appear on YouTube:</property>
-          </widget>
+          </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
@@ -235,30 +261,30 @@ DailyMotion</property>
           </packing>
         </child>
         <child>
-          <widget class="GtkTable" id="table2">
+          <object class="GtkTable" id="table2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="n_rows">7</property>
             <property name="n_columns">2</property>
             <child>
-              <widget class="GtkLabel" id="label2">
+              <object class="GtkLabel" id="label2">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Title: </property>
-              </widget>
+              </object>
               <packing>
                 <property name="x_options">GTK_FILL</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label3">
+              <object class="GtkLabel" id="label3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="yalign">0</property>
                 <property name="label" translatable="yes">Description: </property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">1</property>
                 <property name="bottom_attach">2</property>
@@ -266,13 +292,13 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label4">
+              <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Add tag :
 (and press Enter)</property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">2</property>
                 <property name="bottom_attach">3</property>
@@ -280,12 +306,12 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label5">
+              <object class="GtkLabel" id="label5">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="label" translatable="yes">Category: </property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">3</property>
                 <property name="bottom_attach">4</property>
@@ -293,13 +319,13 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label6">
+              <object class="GtkLabel" id="label6">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="xalign">0</property>
                 <property name="yalign">0</property>
                 <property name="label" translatable="yes">Privacy: </property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">4</property>
                 <property name="bottom_attach">5</property>
@@ -307,7 +333,7 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="title">
+              <object class="GtkEntry" id="title">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">•</property>
@@ -316,17 +342,17 @@ DailyMotion</property>
                 <property name="primary_icon_sensitive">True</property>
                 <property name="secondary_icon_sensitive">True</property>
                 <signal name="changed" handler="_titleChangedCb" swapped="no"/>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkTextView" id="description">
+              <object class="GtkTextView" id="description">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
@@ -335,7 +361,7 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="tags">
+              <object class="GtkEntry" id="tags">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">•</property>
@@ -344,7 +370,7 @@ DailyMotion</property>
                 <property name="primary_icon_sensitive">True</property>
                 <property name="secondary_icon_sensitive">True</property>
                 <signal name="activate" handler="_newTagCb" swapped="no"/>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
@@ -353,11 +379,11 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkVBox" id="vbox3">
+              <object class="GtkVBox" id="vbox3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <child>
-                  <widget class="GtkRadioButton" id="radiobutton1">
+                  <object class="GtkRadioButton" id="radiobutton1">
                     <property name="label" translatable="yes">Public</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -365,7 +391,7 @@ DailyMotion</property>
                     <property name="use_action_appearance">False</property>
                     <property name="active">True</property>
                     <property name="draw_indicator">True</property>
-                  </widget>
+                  </object>
                   <packing>
                     <property name="expand">True</property>
                     <property name="fill">True</property>
@@ -376,7 +402,7 @@ DailyMotion</property>
                   <placeholder/>
                 </child>
                 <child>
-                  <widget class="GtkRadioButton" id="radiobutton3">
+                  <object class="GtkRadioButton" id="radiobutton3">
                     <property name="label" translatable="yes">Private</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -385,14 +411,14 @@ DailyMotion</property>
                     <property name="draw_indicator">True</property>
                     <property name="group">radiobutton1</property>
                     <signal name="toggled" handler="_changeStatusCb" swapped="no"/>
-                  </widget>
+                  </object>
                   <packing>
                     <property name="expand">True</property>
                     <property name="fill">True</property>
                     <property name="position">2</property>
                   </packing>
                 </child>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
@@ -401,7 +427,7 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkEntry" id="fileentry">
+              <object class="GtkEntry" id="fileentry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">●</property>
@@ -409,7 +435,7 @@ DailyMotion</property>
                 <property name="secondary_icon_activatable">False</property>
                 <property name="primary_icon_sensitive">True</property>
                 <property name="secondary_icon_sensitive">True</property>
-              </widget>
+              </object>
               <packing>
                 <property name="left_attach">1</property>
                 <property name="right_attach">2</property>
@@ -418,22 +444,22 @@ DailyMotion</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label12">
+              <object class="GtkLabel" id="label12">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Folder :</property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">5</property>
                 <property name="bottom_attach">6</property>
               </packing>
             </child>
             <child>
-              <widget class="GtkLabel" id="label11">
+              <object class="GtkLabel" id="label11">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">File name:</property>
-              </widget>
+              </object>
               <packing>
                 <property name="top_attach">6</property>
                 <property name="bottom_attach">7</property>
@@ -445,27 +471,27 @@ DailyMotion</property>
             <child>
               <placeholder/>
             </child>
-          </widget>
+          </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>
         </child>
-      </widget>
+      </object>
     </child>
     <child>
       <placeholder/>
     </child>
     <child>
-      <widget class="GtkVBox" id="vbox5">
+      <object class="GtkVBox" id="vbox5">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <widget class="GtkProgressBar" id="renderbar">
+          <object class="GtkProgressBar" id="renderbar">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-          </widget>
+          </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">False</property>
@@ -476,7 +502,7 @@ DailyMotion</property>
         <child>
           <placeholder/>
         </child>
-      </widget>
+      </object>
       <packing>
         <property name="page_type">summary</property>
       </packing>
@@ -490,5 +516,5 @@ DailyMotion</property>
     <child>
       <placeholder/>
     </child>
-  </widget>
-</glade-interface>
+  </object>
+</interface>

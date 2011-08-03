@@ -270,7 +270,6 @@ class PitiviMainWindow(gtk.Window, Loggable):
         if pause:
             project.pipeline.pause()
         win = PublishToYouTubeDialog(self, project)
-        win.show()
 
     def _publishCb(self, unused_button):
         self.showPublishToYouTubeDialog(self.project)

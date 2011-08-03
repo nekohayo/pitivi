@@ -26,10 +26,11 @@ Dialog for publishing to YouTube
 import gtk
 import time
 import thread
+import os
 from gst import SECOND
 from pitivi.log.loggable import Loggable
-from pitivi.ui.glade import GladeWindow
 from pitivi.actioner import Renderer
+from pitivi import configure
 from pitivi.youtube_glib import YTUploader, DMUploader
 from gettext import gettext as _
 from gobject import timeout_add
@@ -44,23 +45,23 @@ import pycurl
 
 catlist = ['Film', 'Autos', 'Music', 'Animals', 'Sports', 'Travel', 'Games', 'Comedy', 'People', 'News', 'Entertainment', 'Education', 'Howto', 'Nonprofit', 'Tech']
 
-class PublishToYouTubeDialog(GladeWindow, Renderer):
-    glade_file = 'publishtoyoutubedialog.glade'
+class PublishToYouTubeDialog(Renderer):
 
     def __init__(self, app, project, pipeline=None):
         Loggable.__init__(self)
-        GladeWindow.__init__(self)
         self.app_settings = app.settings
 
         self.app = app
         self.pipeline = pipeline
         self.project = project
 
+        self.builder = gtk.Builder()
+        self.builder.add_from_file(os.path.join(configure.get_ui_dir(),
+            "publishtoweb.ui"))
+        self._setProperties()
+        self.builder.connect_signals(self)
+
         # UI widgets
-        self.login = self.widgets["login"]
-        self.login_status = self.widgets["login_status"]
-        self.username = self.widgets["username"]
-        self.password = self.widgets["password"]
         self.oldsettings = self.app.project.getSettings()
         self.settings = self.oldsettings.copy()
         self.settings.setEncoders(muxer='avimux', vencoder='xvidenc', aencoder="lamemp3enc")
@@ -69,7 +70,7 @@ class PublishToYouTubeDialog(GladeWindow, Renderer):
 
         #Auto-completion
         if unsecure_storing :
-            self.widgets["checkbutton1"].set_label("Remember me ! Warning : \
+            self.builder.get_object("checkbutton1").set_label("Remember me ! Warning : \
 storage will not be secure. Install python-gnomekeyring.")
             if self.app_settings.login:
                 self.username.set_text(self.app_settings.login)
@@ -84,16 +85,14 @@ storage will not be secure. Install python-gnomekeyring.")
             gk.lock_sync('pitivi')
 
         self.uploader = YTUploader()
-        self.description = self.widgets["description"]
-        self.tags = self.widgets["tags"]
         self.categories = gtk.combo_box_new_text()
-        self.widgets["table2"].attach(self.categories, 1, 2, 3, 4)
+        self.builder.get_object("table2").attach(self.categories, 1, 2, 3, 4)
+
         self.categories.show()
         self.categories.set_title("Choose a category")
         for e in catlist:
             self.categories.append_text(e)
 
-        self.renderbar = self.widgets["renderbar"]
         self.uploadbar = gtk.ProgressBar()
         self.stopbutton = gtk.ToolButton(gtk.STOCK_CANCEL)
         self.hbox = gtk.HBox()
@@ -101,10 +100,9 @@ storage will not be secure. Install python-gnomekeyring.")
         self.hbox.pack_end(self.stopbutton)
         self.taglist = []
 
-        self.fileentry = self.widgets["fileentry"]
         self.updateFilename(self.project.name)
         self.filebutton = gtk.FileChooserButton("Select a file")
-        self.widgets["table2"].attach(self.filebutton, 1, 2, 5, 6)
+        self.builder.get_object("table2").attach(self.filebutton, 1, 2, 5, 6)
         self.filebutton.set_action(gtk.FILE_CHOOSER_ACTION_SELECT_FOLDER)
         self.filebutton.set_current_folder(self.app.settings.lastExportFolder)
         self.filebutton.show()
@@ -132,6 +130,19 @@ storage will not be secure. Install python-gnomekeyring.")
             "tags": "",
         }
         self.has_started_rendering = False
+
+    def _setProperties(self):
+        self.window = self.builder.get_object("publish-assistant")
+        self.description = self.builder.get_object("description")
+        self.tags = self.builder.get_object("tags")
+
+        self.login = self.builder.get_object("login")
+        self.login_status = self.builder.get_object("login_status")
+        self.username = self.builder.get_object("username")
+        self.password = self.builder.get_object("password")
+
+        self.renderbar = self.builder.get_object("renderbar")
+        self.fileentry = self.builder.get_object("fileentry")
 
     def updateFilename(self, name):
         self.fileentry.set_text(name + ".avi")
@@ -196,7 +207,6 @@ storage will not be secure. Install python-gnomekeyring.")
         if self.has_started_rendering:
             self.removeAction()
         self.window.destroy()
-        self.destroy()
 
     def _rememberMeCb(self, button):
         self.remember_me = False
