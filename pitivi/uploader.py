@@ -126,10 +126,10 @@ class YTUploader(UploadBase):
 class DMUploader(UploadBase):
     def __init__(self):
         UploadBase.__init__(self)
-        self.BASE='https://api.dailymotion.com/json'
-        self.KEY='64c3248dee73203abbb3'
-        self.SECRET='25ed2b388125dfe92fff7b827a81231cabbb993e'
-        self.OAUTH='https://api.dailymotion.com/oauth/token'
+        self.BASE = 'https://api.dailymotion.com/json'
+        self.KEY = '5650e080523c04177265'
+        self.SECRET = '8d0d8e5ee4c16b05dbb34244d221b1c4423e149c'
+        self.OAUTH = 'https://api.dailymotion.com/oauth/token'
 
     def authenticate_with_password(self, username, password, callback):
         #OAuth2 to fetch access_token and refresh_token 
