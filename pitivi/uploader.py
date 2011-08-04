@@ -180,7 +180,8 @@ class DMUploader(UploadBase):
         #publish video
         job=json.dumps({"call":"video.edit", "args":{"id":id, "title":self.metadata['title'],
                     "tags":self.metadata['tags'], "channel":self.metadata['category'],
-                    "description":self.metadata['description'], "published":"true"}})
+                    "description":self.metadata['description'], "published":"true", 
+                    "private":self.metadata['private']}})
         req = urllib2.Request(self.BASE+self.UURL, job, {'content-type': 'application/json'})
         response = urllib2.urlopen(req)
         video_url = 'http://www.dailymotion.com/video/' + id

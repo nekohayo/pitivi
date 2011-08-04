@@ -319,7 +319,6 @@ storage will not be secure. Install python-gnomekeyring.")
 
     def _mainQuitCb(self, ignored):
         self.window.destroy()
-        self.destroy()
 
     def _deleteEventCb(self, window, event):
         self.debug("delete event")
