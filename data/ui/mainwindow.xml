@@ -8,6 +8,7 @@
       <menuitem action="RevertToSavedProject" />
       <separator />
       <menuitem action="RenderProject" />
+      <menuitem action="PublishToWeb" />
       <separator />
       <menuitem action="Quit" />
     </menu>
@@ -29,7 +30,6 @@
       <menuitem action="WindowizeViewer" />
     </menu>
     <menu action="Library">
-      <menuitem action="PublishToWeb" />
       <separator />
       <placeholder name="SourceList" />
       <separator />
