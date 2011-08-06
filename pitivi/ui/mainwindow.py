@@ -138,13 +138,12 @@ GlobalSettings.addConfigOption('password',
     section='Authentification',
     key='pass',
     type_=str,
-    default = None)
+    default=None)
 GlobalSettings.addConfigOption('login',
     section='Authentification',
     key='log',
     type_=str,
-    default = None)
-
+    default=None)
 
 
 def supported(info):
@@ -296,8 +295,8 @@ class PitiviMainWindow(gtk.Window, Loggable):
              None, _("Edit the project settings"), self._projectSettingsCb),
             ("RenderProject", 'pitivi-render', _("_Render..."),
              None, _("Export your project as a finished movie"), self._recordCb),
-            ("PublishToWeb", 'pitivi-publish' , _("_Publish to Web"),
-             None, _("Publish to Web"), self._publishCb),
+            ("PublishToWeb", 'pitivi-publish', _("_Publish to Web..."),
+             None, _("Render your project and upload it directly to video sharing websites"), self._publishCb),
             ("Undo", gtk.STOCK_UNDO,
              _("_Undo"),
              "<Ctrl>Z", _("Undo the last operation"), self._undoCb),
