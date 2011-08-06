@@ -359,9 +359,6 @@ class PitiviMainWindow(gtk.Window, Loggable):
             elif action_name == "PublishToWeb":
                 self.publish_button = action
                 action.set_sensitive(False)
-            elif action_name == "ImportfromCam":
-                self.webcam_button = action
-                action.set_sensitive(False)
             elif action_name == "Screencast":
                 # FIXME : re-enable this action once istanbul integration is complete
                 # and upstream istanbul has applied packages for proper interaction.
