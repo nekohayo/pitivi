@@ -29,7 +29,6 @@
       <menuitem action="WindowizeViewer" />
     </menu>
     <menu action="Library">
-      <menuitem action="RenderProject" />
       <menuitem action="PublishToWeb" />
       <separator />
       <placeholder name="SourceList" />
