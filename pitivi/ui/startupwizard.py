@@ -27,6 +27,7 @@ from gettext import gettext as _
 
 from pitivi.configure import get_ui_dir
 from pitivi.configure import APPMANUALURL
+from pitivi.ui.depsmanager import DepsManager
 
 from urllib import unquote
 
@@ -94,9 +95,8 @@ class StartUpWizard(object):
         self.app.gui.openProject()
 
     def _onMissingDepsButtonClickedCb(self, unused_button):
-        for foo in soft_deps:
-            print foo
-            print "\t", soft_deps[foo], "\n"
+        self.hide()
+        self.dep_manager = DepsManager()
 
     def _userManualCb(self, unused_button):
         """Handle a click on the Help button."""
