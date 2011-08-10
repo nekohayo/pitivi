@@ -57,6 +57,10 @@ class StartUpWizard(object):
         filter.set_name(_("Projects"))
         filter.add_pattern("*.xptv")
         self.recent_chooser.add_filter(filter)
+        from pitivi.check import soft_deps
+        global soft_deps
+        if not soft_deps:
+            self.builder.get_object("missing_deps_button").hide()
 
         self.app.projectManager.connect("new-project-failed",
                 self._projectFailedCb)
@@ -88,6 +92,11 @@ class StartUpWizard(object):
     def _onBrowseButtonClickedCb(self, unused_button6):
         """Handle a click on the Browse button."""
         self.app.gui.openProject()
+
+    def _onMissingDepsButtonClickedCb(self, unused_button):
+        for foo in soft_deps:
+            print foo
+            print "\t", soft_deps[foo], "\n"
 
     def _userManualCb(self, unused_button):
         """Handle a click on the Help button."""
