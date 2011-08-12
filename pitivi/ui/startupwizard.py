@@ -28,6 +28,7 @@ from gettext import gettext as _
 from pitivi.configure import get_ui_dir
 from pitivi.configure import APPMANUALURL
 from pitivi.ui.depsmanager import DepsManager
+from pitivi.check import soft_deps
 
 from urllib import unquote
 
@@ -58,8 +59,7 @@ class StartUpWizard(object):
         filter.set_name(_("Projects"))
         filter.add_pattern("*.xptv")
         self.recent_chooser.add_filter(filter)
-        from pitivi.check import soft_deps
-        global soft_deps
+
         if not soft_deps:
             self.builder.get_object("missing_deps_button").hide()
 
