@@ -41,14 +41,6 @@ class DepsManager(object):
         self.window = self.builder.get_object("window1")
         self.show()
 
-# TODO: replace this stuff by packagekit signals
-#        self.app.projectManager.connect("new-project-failed",
-#                self._projectFailedCb)
-#        self.app.projectManager.connect("new-project-loaded",
-#                self._projectLoadedCb)
-#        self.app.projectManager.connect("new-project-loading",
-#                self._projectLoadingCb)
-
     def _onCloseButtonClickedCb(self, unused_button):
         self.hide()
 
