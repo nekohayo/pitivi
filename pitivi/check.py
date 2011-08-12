@@ -167,6 +167,8 @@ def initial_checks():
     # we could check for elements using gst.element_factory_make("foo")
     if not __try_import__("numpy"):
         soft_deps["NumPy"] = _("Enables the autoalign feature")
+    if not __try_import__("gdata"):
+        soft_deps["gdata"] = _("Allows uploading directly to YouTube")
     try:
         #if not gst.registry_get_default().find_plugin("frei0r"):
         gst.element_factory_make("frei0r-filter-scale0tilt")
