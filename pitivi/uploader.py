@@ -31,13 +31,18 @@ import gdata.youtube.client
 import gdata.client
 import gdata.youtube.data
 from os.path import getsize
+import os
 
 import thread
 from httplib2 import Http
+import urlparse
 from urllib import urlencode
 import json
 import urllib2
 import pycurl
+import oauth2 as oauth
+import httplib2
+
 
 APP_NAME = 'PiTiVi'
 DEVELOPER_KEY = 'AI39si5DzhNX8NS0iEZl2Xg3uYj54QG57atp6v5w-FDikhMRYseN6MOtR8Bfvss4C0rTSqyJaTvgN8MHAszepFXz-zg4Zg3XNQ'
@@ -214,3 +219,133 @@ class DailyMotionFileUpload(object):
         self.curl.perform()
         self.curl.close()
 
+class VimeoUploader(UploadBase):
+    def __init__(self):
+        UploadBase.__init__(self)
+        self.REST_URL = 'http://vimeo.com/api/rest/v2';
+        self.AUTH_URL = 'http://vimeo.com/oauth/authorize';
+        self.ACCESS_TOKEN_URL = 'http://vimeo.com/oauth/access_token';
+        self.REQUEST_TOKEN_URL = 'http://vimeo.com/oauth/request_token';
+
+        self.API_KEY='17b5ebcb7333289f8b07757e08af9ef3'
+        self.API_SECRET='e79070e347cd902'
+        self.consumer = oauth.Consumer(self.API_KEY, self.API_SECRET)
+
+        self.auth_type = 'verifier'
+
+
+    def get_oauth_url(self):
+        client = oauth.Client(self.consumer)
+
+        resp, content = client.request(self.REQUEST_TOKEN_URL, "GET")
+
+        request_token = dict(urlparse.parse_qsl(content))
+
+        self.token = oauth.Token(request_token['oauth_token'],
+            request_token['oauth_token_secret'])
+
+        return "%s?oauth_token=%s&permission=write" % (self.AUTH_URL, request_token['oauth_token'])
+
+    def authenticate_with_verifier(self, verifier_token, callback):
+        #OAuth2 to fetch access_token and refresh_token 
+        try:
+            self.token.set_verifier(verifier_token)
+            self.client = oauth.Client(self.consumer, self.token)
+            resp, content = self.client.request(self.ACCESS_TOKEN_URL, "GET")
+            access_token = dict(urlparse.parse_qsl(content))
+            self.access_token = access_token
+
+            #save access_token
+            self.token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
+            gobject.idle_add(callback, ("good"))
+
+        except Exception, e:
+            gobject.idle_add(callback, ("bad", e))
+
+    def upload(self, filepath, metadata, progressCb, doneCb):
+
+
+        self.filepath = filepath
+        self.progressCb = progressCb
+        self.doneCb = doneCb
+        self.metadata = metadata
+        self.client = oauth.Client(self.consumer, self.token)
+
+        params = {}
+        params['format'] = 'json'
+        params['method'] = 'vimeo.videos.upload.getQuota'
+        url = "%s?&%s" % ( self.REST_URL, urlencode(params))
+
+        resp, content = self.client.request(url)
+
+        params = {}
+        params['format'] = 'json'
+        params['method'] = 'vimeo.videos.upload.getTicket'
+        params['upload_method'] = 'streaming'
+        url = "%s?&%s" % ( self.REST_URL, urlencode(params))
+
+        resp, content = self.client.request(url)
+        data = json.loads(content)
+        upload_url = data['ticket']['endpoint']
+        self.ticket_id = data['ticket']['id']
+        host = data['ticket']['host']
+
+        self.uploader = VimeoFileUpload(filepath, upload_url)
+        thread.start_new_thread(self.uploader.UploadFile, 
+                    (self.on_upload_progress, self.on_upload_finish))
+
+    def vimeo_call(self, **kwargs):
+        params = {}
+        for key in kwargs:
+            params[key] = kwargs[key]
+        url = "%s?&%s" % ( self.REST_URL, urlencode(params))
+        resp, content = self.client.request(url)
+        return content
+
+    def on_upload_finish(self):
+
+        
+        data = json.loads(self.vimeo_call(method = 'vimeo.videos.upload.complete', filename = \
+                os.path.basename(self.filepath), format = 'json', \
+                ticket_id = self.ticket_id))
+
+        self.video_id = data['ticket']['video_id']
+        video_url = 'http://www.vimeo.com/' + self.video_id
+        self.doneCb(video_url)
+
+        self.vimeo_call(method = 'vimeo.videos.addTags', tags = self.metadata['tags'], \
+        video_id = self.video_id)
+
+        self.vimeo_call(method = 'vimeo.videos.setTitle', title = self.metadata['title'], \
+        video_id = self.video_id)
+
+        self.vimeo_call(method = 'vimeo.videos.setDescription', description = self.metadata['description'], \
+        video_id = self.video_id)
+
+        if self.metadata['private'] == True:
+            self.vimeo_call(method = 'vimeo.videos.setPrivacy', privacy = self.metadata['private'], \
+                video_id = self.video_id)
+
+    def on_upload_progress(self, dt, dd, utotal, udone):
+        if utotal and udone:
+            self.progressCb(udone, utotal)
+
+
+class VimeoFileUpload(object):
+    def __init__(self, filepath, upload_url):
+        self.upload_url = upload_url
+        self.fileread = open(filepath)
+        self.filesize = getsize(filepath)
+
+    def UploadFile(self, on_upload_progress, on_upload_finish):
+        self.c = pycurl.Curl() 
+        self.c.setopt(pycurl.URL, str(self.upload_url))
+        self.c.setopt(pycurl.UPLOAD, 1)
+        self.c.setopt(pycurl.NOPROGRESS, 0)
+        self.c.setopt(self.c.PROGRESSFUNCTION, on_upload_progress)
+        self.c.setopt(pycurl.INFILE, self.fileread)
+        self.c.setopt(pycurl.INFILESIZE, self.filesize)
+        self.c.perform()
+        self.c.close()
+
+        on_upload_finish()
