@@ -31,7 +31,7 @@ from gst import SECOND
 from pitivi.log.loggable import Loggable
 from pitivi.actioner import Renderer
 from pitivi import configure
-from pitivi.uploader import YTUploader, DMUploader
+from pitivi.uploader import YTUploader, DMUploader, VimeoUploader
 from gettext import gettext as _
 from gobject import timeout_add
 from string import ascii_lowercase, ascii_uppercase, maketrans, translate
@@ -110,12 +110,13 @@ storage will not be secure. Install python-gnomekeyring.")
         self.remember_me = False
 
         # Assistant pages
-        self.login_page = self.window.get_nth_page(0)
-        self.metadata_page = self.window.get_nth_page(1)
-        self.render_page = self.window.get_nth_page(2)
-        self.announce_page = self.window.get_nth_page(3)
+        self.service_page = self.window.get_nth_page(0)
+        self.login_page = self.window.get_nth_page(1)
+        self.verifier_page = self.window.get_nth_page(2)
+        self.metadata_page = self.window.get_nth_page(3)
+        self.render_page = self.window.get_nth_page(4)
+        self.announce_page = self.window.get_nth_page(5)
 
-        self.description.get_buffer().connect("changed", self._descriptionChangedCb)
         self.categories.connect("changed", self._categoryChangedCb)
         self.stopbutton.connect('clicked', self._finishCb)
         self.mainquitsignal = self.app.connect('destroy', self._mainQuitCb)
@@ -130,6 +131,14 @@ storage will not be secure. Install python-gnomekeyring.")
             "tags": "",
         }
         self.has_started_rendering = False
+        self.window.set_forward_page_func(self.page_func)
+
+    def page_func(self, current_page):
+        if current_page == 0 and self.uploader.auth_type == "verifier":
+            return 2
+        else:
+            return current_page + 1
+
 
     def _setProperties(self):
         self.window = self.builder.get_object("publish-assistant")
@@ -140,6 +149,8 @@ storage will not be secure. Install python-gnomekeyring.")
         self.login_status = self.builder.get_object("login_status")
         self.username = self.builder.get_object("username")
         self.password = self.builder.get_object("password")
+        self.verifier = self.builder.get_object("verifier_code")
+        self.verifier_url = self.builder.get_object("verifier_url")
 
         self.renderbar = self.builder.get_object("renderbar")
         self.fileentry = self.builder.get_object("fileentry")
@@ -168,6 +179,7 @@ storage will not be secure. Install python-gnomekeyring.")
             len(self.metadata["title"]) != 0,
             len(self.metadata["description"]) != 0,
         ])
+
         self.window.set_page_complete(self.metadata_page, is_complete)
 
     def _startRendering(self):
@@ -213,6 +225,16 @@ storage will not be secure. Install python-gnomekeyring.")
         if button.get_active():
             self.remember_me = True
 
+    def _authorizeVerifierCb(self, *args):
+        self.uploader.authenticate_with_verifier(self.verifier.get_text(), self._verifierResultCb)
+        self.window.set_page_complete(self.verifier_page, True)
+
+
+    def _verifierResultCb(self, result):
+        if result == 'good':
+            self.window.set_page_complete(self.verifier_page, True)
+
+
     def _loginClickedCb(self, *args):
         self.debug("login clicked")
         self.login_status.set_text("Logging in...")
@@ -226,54 +248,43 @@ storage will not be secure. Install python-gnomekeyring.")
             if self.remember_me:
                 self._storePassword()
             self.window.set_page_complete(self.login_page, True)
-            self.window.set_current_page(self.window.get_current_page() + 1)
+            self.window.set_current_page(self.window.get_current_page() + 2)
         else:
             status, exception = result
             self.login_status.set_text('Unable to login')
-            self.window.set_page_complete(self.login_page, False)
+            self.window.set_page_complete(_verifierChangedCb_verifierChangedCbself.login_page, False)
 
     def _titleChangedCb(self, entry):
         self.metadata["title"] = entry.get_text()
         self._update_metadata_page_complete()
 
-    def _descriptionChangedCb(self, buffer):
-        self.metadata["description"] = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter())
+    def _descriptionChangedCb(self, entry):
+        self.metadata["description"] = entry.get_text()
         self._update_metadata_page_complete()
 
-    def _newTagCb(self, entry):
-        letter_set = frozenset(ascii_lowercase + ascii_uppercase)
-        tab = maketrans(ascii_lowercase + ascii_uppercase, ascii_lowercase * 2)
-        deletions = ''.join(ch for ch in map(chr,range(256)) if ch not in letter_set)
-        text = translate(entry.get_text(), tab, deletions)
-        if len(text) < 2:
-            entry.set_sensitive(False)
-            entry.set_text(" One-letter tags ain't admitted")
-            timeout_add(1000, entry.set_text, "")
-            timeout_add (1000, entry.set_sensitive, True)
-            return
+    def _tagsChangedCb(self, entry):
+        self.metadata["tags"] = entry.get_text()
 
-        if self.metadata["tags"] != "" and text != "" and self.metadata["tags"].count(",") < 6 and text not in self.taglist:
-            self.metadata["tags"] = self.metadata["tags"] + ", " + text
-            self.taglist.append(text)
-
-        elif text != "" and self.metadata["tags"].count(",") < 6 and text not in self.taglist:
-            self.metadata["tags"] = text
-            self.taglist.append(text)
-        entry.set_text('')
-
-    def _videositeChangedCb(self, combo):
+    def _videoServiceChangedCb(self, combo):
         if combo.get_active_text() == "YouTube":
             catlist = youtube_cat
             self.uploader = YTUploader()
-        else:
+
+        elif combo.get_active_text() == "Daily Motion":
             catlist = dailymotion_cat
             self.uploader = DMUploader()
+
+        else:
+            self.uploader = VimeoUploader()
+            catlist= []
+            self.verifier_url.set_label(self.uploader.get_oauth_url())
+            self.verifier_url.set_uri(self.uploader.get_oauth_url())
 
         self.categories.show()
         self.categories.set_title("Choose a category")
         for e in catlist:
             self.categories.append_text(e)
-
+        self.window.set_page_complete(self.service_page, True)
 
     def _categoryChangedCb(self, combo):
         self.metadata["category"] = combo.get_active_text()
