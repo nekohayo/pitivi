@@ -91,6 +91,8 @@ class UploadBase():
 class YTUploader(UploadBase):
     def __init__(self):
         UploadBase.__init__(self)
+        self.auth_type = 'password'
+
 
     def authenticate_with_password(self, username, password, callback):
         try:
@@ -130,6 +132,8 @@ class DMUploader(UploadBase):
         self.KEY = '5650e080523c04177265'
         self.SECRET = '8d0d8e5ee4c16b05dbb34244d221b1c4423e149c'
         self.OAUTH = 'https://api.dailymotion.com/oauth/token'
+        self.auth_type = 'password'
+
 
     def authenticate_with_password(self, username, password, callback):
         #OAuth2 to fetch access_token and refresh_token 
@@ -164,7 +168,7 @@ class DMUploader(UploadBase):
         response = urllib2.urlopen(req)
         result = json.load(response)
         upload_url= result['result']['upload_url']
-        self.uploader = DailyMotionFileUploader(filepath, upload_url)
+        self.uploader = DailyMotionFileUpload(filepath, upload_url)
         thread.start_new_thread(self.uploader.UploadFile, 
                     (self.on_upload_progress, self.on_upload_finish))
 
@@ -192,8 +196,9 @@ class DMUploader(UploadBase):
             self.progressCb(udone, utotal)
 
 
-class DailyMotionFileUploader(object):
+class DailyMotionFileUpload(object):
     def __init__(self, filepath, upload_url):
+
         self.upload_url = upload_url
         self.filepath = filepath
 
@@ -208,3 +213,4 @@ class DailyMotionFileUploader(object):
           ("file", (self.curl.FORM_FILE, self.filepath))])
         self.curl.perform()
         self.curl.close()
+
