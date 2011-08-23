@@ -68,7 +68,7 @@ class PublishToWebDialog(Renderer):
         # UI widgets
         self.oldsettings = self.app.project.getSettings()
         self.settings = self.oldsettings.copy()
-        self.settings.setEncoders(muxer='avimux', vencoder='xvidenc', aencoder="lamemp3enc")
+        self.settings.setEncoders(muxer='mp4mux', vencoder='xvidenc', aencoder="lamemp3enc")
         self.app.project.setSettings(self.settings)
         self.app.publish_button.set_sensitive(False)
 
@@ -156,7 +156,7 @@ storage will not be secure. Install python-gnomekeyring.")
         self.fileentry = self.builder.get_object("fileentry")
 
     def updateFilename(self, name):
-        self.fileentry.set_text(name + ".avi")
+        self.fileentry.set_text(name + ".mp4")
 
     def _storePassword(self):
         if unsecure_storing:
