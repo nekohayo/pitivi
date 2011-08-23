@@ -10,7 +10,8 @@ ui_DATA = \
 	projectsettings.ui	 \
 	depsmanager.ui	\
 	cliptransformation.ui \
-	startupwizard.ui
+	startupwizard.ui\
+	publishtoweb.ui
 
 EXTRA_DIST = \
 	$(ui_DATA)
