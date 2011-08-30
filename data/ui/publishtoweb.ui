@@ -19,10 +19,14 @@
       <placeholder/>
     </child>
     <child>
+      <placeholder/>
+    </child>
+    <child>
       <object class="GtkVBox" id="choose_service">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="border_width">12</property>
+        <property name="spacing">6</property>
         <child>
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
@@ -66,12 +70,15 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="border_width">12</property>
+        <property name="spacing">6</property>
         <child>
           <object class="GtkTable" id="table1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="n_rows">2</property>
             <property name="n_columns">2</property>
+            <property name="column_spacing">6</property>
+            <property name="row_spacing">6</property>
             <child>
               <object class="GtkLabel" id="label8">
                 <property name="visible">True</property>
@@ -180,6 +187,7 @@
           <object class="GtkHBox" id="hbox1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="spacing">6</property>
             <child>
               <object class="GtkLabel" id="label10">
                 <property name="visible">True</property>
@@ -222,6 +230,7 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="border_width">12</property>
+        <property name="spacing">6</property>
         <child>
           <object class="GtkLabel" id="label3">
             <property name="visible">True</property>
@@ -255,6 +264,7 @@
           <object class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
+            <property name="spacing">6</property>
             <child>
               <object class="GtkLabel" id="label15">
                 <property name="visible">True</property>
@@ -262,7 +272,7 @@
                 <property name="label" translatable="yes">Enter verification code here:</property>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
               </packing>
@@ -291,14 +301,14 @@
                 <signal name="clicked" handler="_authorizeVerifierCb" swapped="no"/>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">2</property>
               </packing>
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">2</property>
           </packing>
@@ -310,6 +320,7 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="border_width">12</property>
+        <property name="spacing">6</property>
         <child>
           <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
@@ -328,6 +339,8 @@
             <property name="can_focus">False</property>
             <property name="n_rows">7</property>
             <property name="n_columns">2</property>
+            <property name="column_spacing">6</property>
+            <property name="row_spacing">6</property>
             <child>
               <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
@@ -430,6 +443,7 @@
               <object class="GtkVBox" id="vbox3">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="spacing">6</property>
                 <child>
                   <object class="GtkRadioButton" id="radiobutton1">
                     <property name="label" translatable="yes">Public</property>
@@ -545,6 +559,7 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="border_width">12</property>
+        <property name="spacing">6</property>
         <child>
           <object class="GtkProgressBar" id="renderbar">
             <property name="visible">True</property>
