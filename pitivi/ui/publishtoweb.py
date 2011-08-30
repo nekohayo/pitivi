@@ -277,7 +277,6 @@ storage will not be secure. Install python-gnomekeyring.")
         else:
             self.uploader = VimeoUploader()
             catlist= []
-            self.verifier_url.set_label(self.uploader.get_oauth_url())
             self.verifier_url.set_uri(self.uploader.get_oauth_url())
 
         self.categories.show()
