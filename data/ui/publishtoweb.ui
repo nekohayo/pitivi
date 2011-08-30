@@ -546,6 +546,9 @@
           </packing>
         </child>
       </object>
+      <packing>
+        <property name="complete">True</property>
+      </packing>
     </child>
     <child>
       <object class="GtkVBox" id="progress">
