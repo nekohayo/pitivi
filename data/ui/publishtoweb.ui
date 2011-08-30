@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <requires lib="gtk+" version="2.22"/>
-  <!-- interface-naming-policy project-wide -->
   <object class="GtkAssistant" id="publish-assistant">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -10,6 +9,9 @@
     <signal name="close" handler="_destroyCb" swapped="no"/>
     <signal name="cancel" handler="_cancelCb" swapped="no"/>
     <signal name="prepare" handler="_prepareCb" swapped="no"/>
+    <child>
+      <placeholder/>
+    </child>
     <child>
       <placeholder/>
     </child>
@@ -104,8 +106,6 @@
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -121,8 +121,6 @@
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -276,8 +274,6 @@
                 <property name="invisible_char">•</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -406,8 +402,6 @@
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
                 <signal name="changed" handler="_titleChangedCb" swapped="no"/>
               </object>
               <packing>
@@ -423,8 +417,6 @@
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
                 <signal name="changed" handler="_tagsChangedCb" swapped="no"/>
               </object>
               <packing>
@@ -487,8 +479,6 @@
                 <property name="invisible_char_set">True</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -520,20 +510,12 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
-            </child>
-            <child>
-              <placeholder/>
-            </child>
-            <child>
               <object class="GtkEntry" id="description">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="invisible_char">•</property>
                 <property name="primary_icon_activatable">False</property>
                 <property name="secondary_icon_activatable">False</property>
-                <property name="primary_icon_sensitive">True</property>
-                <property name="secondary_icon_sensitive">True</property>
                 <signal name="changed" handler="_descriptionChangedCb" swapped="no"/>
               </object>
               <packing>
@@ -542,6 +524,12 @@
                 <property name="top_attach">1</property>
                 <property name="bottom_attach">2</property>
               </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
             </child>
           </object>
           <packing>
