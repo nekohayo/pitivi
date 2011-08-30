@@ -581,13 +581,13 @@
     </columns>
     <data>
       <row>
-        <col id="0" translatable="yes">YouTube</col>
+        <col id="0" translatable="no">YouTube</col>
       </row>
       <row>
-        <col id="0" translatable="yes">Dailymotion</col>
+        <col id="0" translatable="no">Dailymotion</col>
       </row>
       <row>
-        <col id="0" translatable="yes">Vimeo</col>
+        <col id="0" translatable="no">Vimeo</col>
       </row>
     </data>
   </object>
