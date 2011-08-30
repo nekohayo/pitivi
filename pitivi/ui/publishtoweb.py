@@ -270,7 +270,7 @@ storage will not be secure. Install python-gnomekeyring.")
             catlist = youtube_cat
             self.uploader = YTUploader()
 
-        elif combo.get_active_text() == "Daily Motion":
+        elif combo.get_active_text() == "Dailymotion":
             catlist = dailymotion_cat
             self.uploader = DMUploader()
 
