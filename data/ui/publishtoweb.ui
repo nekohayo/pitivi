@@ -20,6 +20,7 @@
       <object class="GtkVBox" id="choose_service">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="border_width">12</property>
         <child>
           <object class="GtkLabel" id="label1">
             <property name="visible">True</property>
@@ -62,6 +63,7 @@
       <object class="GtkVBox" id="password_auth">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="border_width">12</property>
         <child>
           <object class="GtkTable" id="table1">
             <property name="visible">True</property>
@@ -221,6 +223,7 @@
       <object class="GtkVBox" id="verifier_auth">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="border_width">12</property>
         <child>
           <object class="GtkLabel" id="label3">
             <property name="visible">True</property>
@@ -310,6 +313,7 @@
       <object class="GtkVBox" id="metadata">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="border_width">12</property>
         <child>
           <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
@@ -552,6 +556,7 @@
       <object class="GtkVBox" id="progress">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
+        <property name="border_width">12</property>
         <child>
           <object class="GtkProgressBar" id="renderbar">
             <property name="visible">True</property>
