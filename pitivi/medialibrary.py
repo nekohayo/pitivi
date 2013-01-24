@@ -141,6 +141,8 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
         builder.connect_signals(self)
         self._welcome_infobar = builder.get_object("welcome_infobar")
         self._import_warning_infobar = builder.get_object("warning_infobar")
+        self._codec_helper_infobar = builder.get_object("codec-helper_infobar")
+        self._codec_helper_label = builder.get_object("codec-helper_infobar_label")
         self._warning_label = builder.get_object("warning_label")
         self._view_error_button = builder.get_object("view_error_button")
         toolbar = builder.get_object("medialibrary_toolbar")
@@ -296,6 +298,7 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
         self.pack_start(toolbar, False, False, 0)
         self.pack_start(self._welcome_infobar, False, False, 0)
         self.pack_start(self._import_warning_infobar, False, False, 0)
+        self.pack_start(self._codec_helper_infobar, False, False, 0)
         self.pack_start(self.iconview_scrollwin, True, True, 0)
         self.pack_start(self.treeview_scrollwin, True, True, 0)
         self.pack_start(self._progressbar, False, True, 0)
@@ -707,6 +710,9 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
             if not found:
                 # Can happen if the user removed the asset in the meanwhile.
                 self.log("%s needed a thumbnail, but vanished from storemodel", uri)
+
+    def _dismissCodecHelperInfobarCb(self, unused_button):
+        self._codec_helper_infobar.hide()
 
     ## Error Dialog Box callbacks
 

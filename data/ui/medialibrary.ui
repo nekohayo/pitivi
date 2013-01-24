@@ -1,6 +1,69 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
   <!-- interface-requires gtk+ 3.0 -->
+  <object class="GtkInfoBar" id="codec-helper_infobar">
+    <property name="app_paintable">True</property>
+    <property name="can_focus">False</property>
+    <child internal-child="content_area">
+      <object class="GtkBox" id="infobar-content_area8">
+        <property name="can_focus">False</property>
+        <property name="border_width">8</property>
+        <property name="spacing">16</property>
+        <child>
+          <object class="GtkLabel" id="codec-helper_infobar_label">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label">(Codec helper error messages go here)</property>
+            <property name="wrap">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <action-widgets>
+      <action-widget response="0">button2</action-widget>
+    </action-widgets>
+    <child internal-child="action_area">
+      <object class="GtkButtonBox" id="infobar-action_area8">
+        <property name="can_focus">False</property>
+        <property name="border_width">5</property>
+        <property name="spacing">6</property>
+        <property name="layout_style">end</property>
+        <child>
+          <object class="GtkButton" id="button2">
+            <property name="label">gtk-close</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+            <signal name="clicked" handler="_dismissCodecHelperInfobarCb" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+    <action-widgets>
+      <action-widget response="0">button2</action-widget>
+    </action-widgets>
+  </object>
   <object class="GtkToolbar" id="medialibrary_toolbar">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
@@ -193,6 +256,7 @@
       <object class="GtkButtonBox" id="infobar-action_area3">
         <property name="can_focus">False</property>
         <property name="border_width">5</property>
+        <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <property name="layout_style">end</property>
         <child>
