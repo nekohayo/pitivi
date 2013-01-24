@@ -541,14 +541,14 @@ class PitiviMainWindow(Gtk.Window, Loggable):
     def focusTimeline(self):
         self.timeline_ui.grab_focus()
 
-## Missing Plugin Support
-
-    def _installPlugins(self, details, missingPluginsCallback):
+    def installPlugins(self, details, missingPluginsCallback):
+        """
+        Show GStreamer's codec installer, which relies on the user's distro
+        package manager.
+        """
         context = InstallPluginsContext()
-        context.set_xid(self.window.xid)
-
-        res = install_plugins_async(details, context,
-                missingPluginsCallback)
+        context.set_xid(self.get_property("window").get_xid())
+        res = install_plugins_async(details, context, missingPluginsCallback, None)
         return res
 
 ## UI Callbacks
@@ -1065,8 +1065,6 @@ class PitiviMainWindow(Gtk.Window, Loggable):
         return new_uri
 
     def _connectToProject(self, project):
-        #FIXME GES we should re-enable this when possible
-        #medialibrary.connect("missing-plugins", self._sourceListMissingPluginsCb)
         project.connect("asset-removed", self._mediaLibrarySourceRemovedCb)
         project.connect("project-changed", self._projectChangedCb)
 
@@ -1139,11 +1137,6 @@ class PitiviMainWindow(Gtk.Window, Loggable):
         """
         self.viewer.setDisplayAspectRatio(project.aspect_ratio)
         self.viewer.timecode_entry.setFramerate(project.videorate)
-
-    def _sourceListMissingPluginsCb(self, unused_project, unused_uri, unused_factory,
-            details, unused_descriptions, missingPluginsCallback):
-        res = self._installPlugins(details, missingPluginsCallback)
-        return res
 
     def _timelineDurationChangedCb(self, timeline, unused_duration):
         duration = timeline.get_duration()

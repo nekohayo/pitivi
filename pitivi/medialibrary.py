@@ -45,7 +45,7 @@ from urllib import unquote
 from gettext import ngettext, gettext as _
 from urlparse import urlparse
 from hashlib import md5
-from gi.repository.GstPbutils import DiscovererVideoInfo
+from gi.repository.GstPbutils import DiscovererVideoInfo, InstallPluginsReturn
 
 from pitivi.configure import get_ui_dir, get_pixmap_dir
 from pitivi.settings import GlobalSettings
@@ -131,6 +131,7 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
         self.app = app
         self._errors = []
         self._missing_thumbs = []
+        self._missing_codecs = []
         self._project = None
         self._draggedPaths = None
         self.dragged = False
@@ -652,11 +653,16 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
             self._welcome_infobar.show_all()
         self.debug("Removing: %s", uri)
 
-    def _errorCreatingAssetCb(self, unused_project, error, id, type):
-        """ The given uri isn't a media file """
-        if GObject.type_is_a(type, GES.UriClip):
-            error = (id, str(error.domain), error)
-            self._errors.append(error)
+    def _errorCreatingAssetCb(self, unused_project, error, id, asset_type):
+        """
+        The given asset ID (URI) needs additional codecs or isn't a media file.
+        """
+        if GObject.type_is_a(asset_type, GES.UriClip):
+            error_tuple = (id, str(error.domain), error)
+            if error.code is Gst.CoreError.MISSING_PLUGIN.real:
+                self._missing_codecs.append(error_tuple)
+            else:
+                self._errors.append(error_tuple)
             self._updateProgressbar()
 
     def _sourcesStartedImportingCb(self, unused_project):
@@ -668,6 +674,46 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
         self.debug("Importing took %.3f seconds", time.time() - self.import_start_time)
         self.flush_pending_rows()
         self._progressbar.hide()
+
+        if self._missing_codecs:
+            # TODO: for error in self._missing_codecs,
+            #   get the details string and concatenate into one big string
+            install_result = self.app.gui.installPlugins(details, self._installPluginsResultCb)
+
+            if install_result is InstallPluginsReturn.HELPER_MISSING:
+                self.warning("Codec installation helper is missing")
+                codec_helper_msg = _("Additional codecs are required "
+                    "but the GStreamer plugin installation helper is missing. "
+                    "You may need to install the required plugins manually.")
+            elif install_result is InstallPluginsReturnself.PARTIAL_SUCCESS:
+                # TODO: rediscover the relevant files
+                codec_helper_msg = _("New codecs have been installed, "
+                    "but some files are still missing codecs and "
+                    "were therefore not imported.")
+            elif install_result is InstallPluginsReturnself.SUCCESS:
+                # TODO: rediscover files instead of requiring a restart
+                # TODO: codec_helper_msg = None
+                codec_helper_msg = _("New codecs have been installed, "
+                    "please restart Pitivi to apply changes.")
+            elif install_result is InstallPluginsReturnself.ERROR:
+                # An error message has already been displayed to the user by GSt
+                codec_helper_msg = None
+
+            # TODO: instead of displaying the "complete failure" messages below,
+            # perhaps we should fetch the individual failed files and append
+            # them to self._errors to be displayed as regular errors.
+            elif install_result is InstallPluginsReturnself.NOT_FOUND:
+                codec_helper_msg = _("No codecs are available "
+                    "for the files you tried to import.")
+            else:
+                codec_helper_msg = _("Required codecs could not be installed. "
+                    "You will not be able to use some of the files "
+                    "you were trying to import.")
+
+            if codec_helper_msg:
+                self._codec_helper_label.set_text(codec_helper_msg)
+                self._codec_helper_infobar.show()
+
         if self._errors:
             errors_amount = len(self._errors)
             btn_text = ngettext("View error", "View errors", errors_amount)
@@ -710,6 +756,9 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
             if not found:
                 # Can happen if the user removed the asset in the meanwhile.
                 self.log("%s needed a thumbnail, but vanished from storemodel", uri)
+
+    def _installPluginsResultCb(self, result):
+        pass
 
     def _dismissCodecHelperInfobarCb(self, unused_button):
         self._codec_helper_infobar.hide()
