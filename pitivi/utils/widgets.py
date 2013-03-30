@@ -394,6 +394,11 @@ class FractionWidget(TextWidget, DynamicWidget):
         self.addChoices(choices)
 
     def setWidgetValue(self, value):
+        # With introspection, we get tuples for GESTrackElement children props
+        if type(value) is tuple:
+            print "fraction widget tuple:", value
+            value = value[-1]  # Grab the last item of the tuple
+
         if type(value) is str:
             value = self._parseText(value)
         elif not hasattr(value, "denom"):
@@ -438,6 +443,10 @@ class ToggleWidget(Gtk.CheckButton, DynamicWidget):
         self.connect("toggled", callback, *args)
 
     def setWidgetValue(self, value):
+        # With introspection, we get tuples for GESTrackElement children props
+        if type(value) is tuple:
+            value = value[-1]  # Grab the last item of the tuple
+
         self.set_active(value)
 
     def getWidgetValue(self):
@@ -466,6 +475,10 @@ class ChoiceWidget(Gtk.HBox, DynamicWidget):
         return self.contents.connect("changed", callback, *args)
 
     def setWidgetValue(self, value):
+        # With introspection, we get tuples for GESTrackElement children props
+        if type(value) is tuple:
+            value = value[-1]  # Grab the last item of the tuple
+
         try:
             self.contents.set_active(self.values.index(value))
         except ValueError:
