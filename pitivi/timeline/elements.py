@@ -1029,6 +1029,12 @@ class URISourceElement(TimelineElement):
         self.background.set_position(0, 0)
 
     # Callbacks
+    def _selectedChangedCb(self, selected, isSelected):
+        TimelineElement._selectedChangedCb(self, selected, isSelected)
+
+        if isSelected:
+            self.timeline._container.app.gui.switchContextTab("clip configuration")
+
     def _clickedCb(self, action, actor):
         #TODO : Let's be more specific, masks etc ..
         children = self.bElement.get_toplevel_parent().get_children(True)
