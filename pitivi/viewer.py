@@ -105,6 +105,11 @@ class PitiviViewer(Gtk.VBox, Loggable):
         # Only used for restoring the pipeline position after a live clip trim preview:
         self._oldTimelinePos = None
 
+        # Store the last dimensions of the video sink widget dimensions,
+        # to avoid spamming our restriction caps unless necessary:
+        self._last_sink_width = 1
+        self._last_sink_height = 1
+
         self._haveUI = False
 
         self._createUi()
@@ -180,6 +185,24 @@ class PitiviViewer(Gtk.VBox, Loggable):
         self.settings.viewerX = event.x
         self.settings.viewerY = event.y
 
+    def _externalAframeSizeAllocateCb(self, widget, event):
+        # event.width and event.height are the space "available" from the
+        # widget that contains the AspectFrame, not the actual size.
+        # However, AspectFrame doesn't "request" a size, so we can't use that
+        # to measure it. We need to query the allocation given to its child:
+        real_width = self.external_aframe.get_child().get_allocated_width()
+        real_height = self.external_aframe.get_child().get_allocated_height()
+        self._check_update_restriction_caps(real_width, real_height)
+
+    def _internalAframeSizeAllocateCb(self, widget, event):
+        # event.width and event.height are the space "available" from the
+        # widget that contains the AspectFrame, not the actual size.
+        # However, AspectFrame doesn't "request" a size, so we can't use that
+        # to measure it. We need to query the allocation given to its child:
+        real_width = self.internal_aframe.get_child().get_allocated_width()
+        real_height = self.internal_aframe.get_child().get_allocated_height()
+        self._check_update_restriction_caps(real_width, real_height)
+
     def _videoRealized(self, widget):
         if widget == self.target:
             self._switch_output_window()
@@ -198,6 +221,7 @@ class PitiviViewer(Gtk.VBox, Loggable):
         # self.internal.init_transformation_events()
         self.internal_aframe.add(self.internal)
         self.pack_start(self.internal_aframe, True, True, 0)
+        self.internal_aframe.connect("size-allocate", self._internalAframeSizeAllocateCb)
 
         self.external_window = Gtk.Window()
         vbox = Gtk.VBox()
@@ -206,6 +230,7 @@ class PitiviViewer(Gtk.VBox, Loggable):
         self.external = ViewerWidget(self.app.settings)
         self.external_aframe.add(self.external)
         vbox.pack_start(self.external_aframe, True, True, 0)
+        self.external_aframe.connect("size-allocate", self._externalAframeSizeAllocateCb)
         self.external_window.connect("delete-event", self._externalWindowDeleteCb)
         self.external_window.connect("configure-event", self._externalWindowConfigureCb)
         self.external_vbox = vbox
@@ -292,6 +317,55 @@ class PitiviViewer(Gtk.VBox, Loggable):
         self.external.connect("realize", self._videoRealized)
         self.show_all()
         self.external_vbox.show_all()
+
+    def _check_update_restriction_caps(self, width, height):
+        """
+        With the viewer's video sink widget's current width and height,
+        determine if those dimensions changed and if restriction caps should
+        be used to improve playback performance by lowering the resolution.
+        """
+        # TODO: check if we're rendering and, if so, don't do anything
+        if self.app.current_project is None:
+            # We're still in startup or project settings don't exist somehow
+            return
+
+        # Store the previous state in a temporary variable:
+        dimensions_changed = (width != self._last_sink_width or
+                            height != self._last_sink_height)
+        # ...because the other variables get overridden here:
+        self._last_sink_width = width
+        self._last_sink_height = height
+        if not dimensions_changed:
+            # This happens if, for instance, you move the undocked viewer around
+            self.log("Dimensions unchanged, no need to update restriction caps")
+            return
+
+        # TODO: compress the events to avoid spamming the backend with
+        # restriction caps change requests, as this might be expensive.
+        project_width = float(self.app.current_project.videowidth)
+        project_height = float(self.app.current_project.videoheight)
+        if (width / project_width) < 0.8 or (height / project_height) < 0.8:
+            self.info("Restricting display resolution to %sx%s for performance", width, height)
+            self._set_restriction_caps(width, height)
+        else:
+            self.info("Viewer resolution (%sx%s) close enough to project settings, removing restrictions", width, height)
+            self.app.current_project.update_restriction_caps()
+
+    def _set_restriction_caps(self, width, height):
+        """
+        Since the viewer widget is shown at small dimensions most of the time,
+        we set caps restrictions on the width and height.
+
+        With HD footage, lowering the resolution this way allows us to get
+        significant performance gains, particularly when effects are used.
+        """
+        caps = Gst.Caps.new_empty_simple("video/x-raw")
+        caps.set_value("width", width)
+        caps.set_value("height", height)
+        for track in self.app.current_project.timeline.get_tracks():
+            if isinstance(track, GES.VideoTrack):
+                track.set_restriction_caps(caps)
+        self.debug("Restriction caps set to %sx%s", width, height)
 
     def setDisplayAspectRatio(self, ratio):
         self.debug("Setting aspect ratio to %f [%r]", float(ratio), ratio)
