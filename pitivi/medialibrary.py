@@ -45,7 +45,8 @@ from urllib import unquote
 from gettext import ngettext, gettext as _
 from urlparse import urlparse
 from hashlib import md5
-from gi.repository.GstPbutils import DiscovererVideoInfo, InstallPluginsReturn
+from gi.repository.GstPbutils import DiscovererVideoInfo, InstallPluginsReturn,\
+    is_missing_plugin_message, missing_plugin_message_get_installer_detail
 
 from pitivi.configure import get_ui_dir, get_pixmap_dir
 from pitivi.settings import GlobalSettings
@@ -658,10 +659,10 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
         The given asset ID (URI) needs additional codecs or isn't a media file.
         """
         if GObject.type_is_a(asset_type, GES.UriClip):
-            error_tuple = (id, str(error.domain), error)
             if error.code is Gst.CoreError.MISSING_PLUGIN.real:
-                self._missing_codecs.append(error_tuple)
+                self._missing_codecs.append(error)
             else:
+                error_tuple = (id, str(error.domain), error)
                 self._errors.append(error_tuple)
             self._updateProgressbar()
 
@@ -676,8 +677,17 @@ class MediaLibraryWidget(Gtk.VBox, Loggable):
         self._progressbar.hide()
 
         if self._missing_codecs:
-            # TODO: for error in self._missing_codecs,
-            #   get the details string and concatenate into one big string
+            # Get the detail string of each error and concatenate them
+            details = ""
+            for error in self._missing_codecs:
+                # FIXME: the error object is just a string such as "Il manque un greffon dans votre installation de GStreamer"... so it will traceback:
+                msg = error.get_message()
+                if is_missing_plugin_message(msg):
+                    foo = missing_plugin_message_get_installer_detail(msg)
+                    details += foo
+                else:
+                    self.error("The following error message is unsuitable for plugin search: %s", str(msg))
+
             install_result = self.app.gui.installPlugins(details, self._installPluginsResultCb)
 
             if install_result is InstallPluginsReturn.HELPER_MISSING:
