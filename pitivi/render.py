@@ -878,6 +878,10 @@ class RenderDialog(Loggable):
         The render button inside the render dialog has been clicked,
         start the rendering process.
         """
+        # Since the viewer's live playback sets restriction caps,
+        # reset them to the project's settings before rendering:
+        self.project.update_restriction_caps()
+
         self.outfile = os.path.join(self.filebutton.get_uri(),
                                     self.fileentry.get_text())
         self.progress = RenderingProgressDialog(self.app, self)
@@ -900,6 +904,7 @@ class RenderDialog(Loggable):
                     self._factory_formats[encoder_string] = fmt
                     break
 
+        # Ensures project restriction caps take rendering settings into account:
         self.project.set_rendering(True)
         self._pipeline.set_render_settings(self.outfile, self.project.container_profile)
         self.startAction()
