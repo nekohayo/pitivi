@@ -165,7 +165,7 @@ class PitiviViewer(Gtk.VBox, Loggable):
         self.pipeline = None
 
     def _setUiActive(self, active=True):
-        self.debug("active %r", active)
+        self.log("active %r", active)
         self.set_sensitive(active)
         if self._haveUI:
             for item in [self.goToStart_button, self.back_button,

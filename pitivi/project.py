@@ -537,7 +537,7 @@ class Project(Loggable, GES.Project):
         """
         Loggable.__init__(self)
         GES.Project.__init__(self, uri=uri, extractable_type=GES.Timeline)
-        self.log("name:%s, uri:%s", name, uri)
+        self.log("name: %s, URI: %s", name, uri)
         self.pipeline = None
         self.timeline = None
         self.seeker = Seeker()
@@ -882,6 +882,8 @@ class Project(Loggable, GES.Project):
         return True
 
     def update_restriction_caps(self):
+        self.info("Setting caps to %dx%d at %s fps",
+                self.videowidth, self.videoheight, self.videorate)
         caps = Gst.Caps.new_empty_simple("video/x-raw")
         caps.set_value("width", self.videowidth)
         caps.set_value("height", self.videoheight)
