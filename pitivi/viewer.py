@@ -317,27 +317,39 @@ class PitiviViewer(Gtk.VBox, Loggable):
         self.show_all()
         self.external_vbox.show_all()
 
-    def _check_update_restriction_caps(self, width, height):
+    def _check_update_restriction_caps(self, width=None, height=None, force=False):
         """
         With the viewer's video sink widget's current width and height,
         determine if those dimensions changed and if restriction caps should
         be used to improve playback performance by lowering the resolution.
+
+        If force=True, restriction caps will be set back to the previous values.
+        This is used after a project save to re-enable the temporary caps.
+        This is the only case where the width and height parameters are allowed
+        to be "None".
         """
         # TODO: check if we're rendering and, if so, don't do anything
         if self.app.current_project is None:
             # We're still in startup or project settings don't exist somehow
             return
 
-        # Store the previous state in a temporary variable:
-        dimensions_changed = (width != self._last_sink_width or
-                            height != self._last_sink_height)
-        # ...because the other variables get overridden here:
-        self._last_sink_width = width
-        self._last_sink_height = height
-        if not dimensions_changed:
-            # This happens if, for instance, you move the undocked viewer around
-            self.log("Dimensions unchanged, no need to update restriction caps")
+        if force is True:
+            width = self._last_sink_width
+            height = self._last_sink_height
+        elif width is None or height is None:
+            self.error("No width or height were specified")
             return
+        else:
+            # Store the previous state in a temporary variable:
+            dimensions_changed = (width != self._last_sink_width or
+                                height != self._last_sink_height)
+            # ...because the other variables get overridden here:
+            self._last_sink_width = width
+            self._last_sink_height = height
+            if not dimensions_changed:
+                # This happens if, for instance, you move the undocked viewer around
+                self.log("Dimensions unchanged, no need to update restriction caps")
+                return
 
         # TODO: compress the events to avoid spamming the backend with
         # restriction caps change requests, as this might be expensive.
@@ -346,6 +358,10 @@ class PitiviViewer(Gtk.VBox, Loggable):
         if (width / project_width) < 0.8 or (height / project_height) < 0.8:
             self.info("Restricting display resolution to %sx%s for performance", width, height)
             self._set_restriction_caps(width, height)
+        elif force is True:
+            # ProjectManager's saveProject method already calls
+            # "current_project.update_restriction_caps()"
+            self.info("Nothing needs to be done, using project's restriction caps")
         else:
             self.info("Viewer resolution (%sx%s) close enough to project settings, removing restrictions", width, height)
             self.app.current_project.update_restriction_caps()

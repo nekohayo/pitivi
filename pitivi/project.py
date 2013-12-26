@@ -277,6 +277,11 @@ class ProjectManager(Signallable, Loggable):
                           _("You do not have permissions to write to this folder."))
                 return
 
+        # Unset any temporary restriction caps set by the viewer,
+        # otherwise they would be saved into the project file.
+        self.debug("Temporarily unsetting viewer restriction caps for saving")
+        self.current_project.update_restriction_caps()
+
         try:
             # "overwrite" is always True: our GTK filechooser save dialogs are
             # set to always ask the user on our behalf about overwriting, so
@@ -299,6 +304,10 @@ class ProjectManager(Signallable, Loggable):
                 self.disable_save = False
             else:
                 self.debug('Saved backup: %s', uri)
+
+        # And now, re-enable the viewer's temporary restriction caps:
+        self.debug("Re-enabling viewer restriction caps")
+        self.app.gui.viewer._check_update_restriction_caps(None, None, force=True)
 
         return saved
 
