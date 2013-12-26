@@ -150,7 +150,6 @@ class PitiviViewer(Gtk.VBox, Loggable):
         self.sink = pipeline.video_overlay
         self.target.sink = self.sink
         self._switch_output_window()
-        self._setUiActive()
 
     def _disconnectFromPipeline(self):
         self.debug("pipeline: %r", self.pipeline)
